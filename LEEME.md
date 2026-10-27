@@ -30,6 +30,9 @@ no se guarda en ningún servidor. La etiqueta de 100 × 150 mm con el QR se desc
 4. Vaya a **Settings → Pages**. En **Source** elija **Deploy from a branch**, rama **main**, carpeta **/ (root)**, y pulse **Save**.
 5. En uno o dos minutos la app queda publicada en: `https://SU-USUARIO.github.io/selector-epp/`
 
+**Dirección oficial de esta app:** https://selector.tuls.app/ (dominio propio configurado en el archivo `CNAME`).
+Los códigos QR siempre apuntan a esta dirección. Si cambia el dominio, actualice `APP_URL` en `index.html`.
+
 ## Otras opciones gratuitas
 
 - **Netlify Drop**: entre a https://app.netlify.com/drop y arrastre la carpeta completa.

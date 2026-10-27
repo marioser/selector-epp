@@ -585,8 +585,8 @@ let isExample = false;
 let downloads = null, lastX = null, lastR = null;
 let fromQR = null;                 // fecha (minutos) de una evaluación abierta desde un QR
 let lastEdit = Date.now();         // momento de la última modificación (va en el QR)
-// Dirección pública de la app: la misma desde donde se abrió
-const APP_URL = location.origin + location.pathname.replace(/index\.html$/, '');
+// Dirección pública de la app (los QR siempre apuntan aquí; en pruebas locales, a la dirección local)
+const APP_URL = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) ? location.origin + location.pathname.replace(/index\.html$/, '') : 'https://selector.tuls.app/';
 const pdfButton = () => downloads && window.jspdf ? '<button type="button" class="btn red" id="pdfBtn">Descargar informe PDF</button>' : '';
 let step = 6;                 // 1..5 = pasos, 6 = resultado (modo asistente en móvil)
 const checked = new Set();
