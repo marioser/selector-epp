@@ -1,6 +1,6 @@
 // Guarda la app en el teléfono para que funcione sin conexión.
 // Al publicar cambios, suba el número de versión para que los teléfonos descarguen la nueva.
-const VERSION = 'selector-epp-v1';
+const VERSION = 'selector-epp-v2';
 const FILES = [
   './', './index.html', './manifest.webmanifest', './vendor/jspdf.umd.min.js',
   './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png',

@@ -101,13 +101,16 @@ h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0}
 .chip input:focus-visible+span{outline:3px solid var(--focus);outline-offset:2px}
 .chips.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}
 .chips.two{display:grid;grid-template-columns:1fr 1fr}
+.chips.tu3{display:grid;grid-template-columns:repeat(3,1fr)}
+@media(max-width:520px){.chips.tu3{grid-template-columns:1fr}}
 .vbtn{min-height:48px;min-width:74px;padding:8px 12px;border-radius:10px;border:1.5px solid var(--line);background:var(--chip);font-weight:700;font-size:16px;cursor:pointer;font-variant-numeric:tabular-nums}
 .vbtn.on{background:var(--ink);color:var(--surface);border-color:var(--ink)}
 
 label.f{display:block;font-size:14px;font-weight:600;margin:14px 0 6px}
 .inrow{display:flex;gap:8px;align-items:center}
 .inrow input{max-width:200px}
-.unit{color:var(--muted);font-weight:700;font-size:17px}
+.unit{color:var(--muted);font-weight:700;font-size:17px;white-space:nowrap}
+[hidden]{display:none!important}
 input[type=text],select{width:100%;min-height:50px;padding:10px 12px;border:1.5px solid var(--line);border-radius:10px;background:var(--surface);font-size:19px;font-weight:600;font-variant-numeric:tabular-nums}
 select{font-size:17px}
 input.free{font-size:17px;font-weight:500}
@@ -387,25 +390,47 @@ details.adv summary{cursor:pointer;font-size:14px;color:var(--muted);min-height:
 
       <div id="tBrk">
         <div class="calc">
-          <label class="f" for="bt" style="margin-top:0">Tipo de disparo magnético</label>
-          <select id="bt">
-            <option value="B">Miniatura · curva B (3–5 × In)</option>
-            <option value="C">Miniatura · curva C (5–10 × In)</option>
-            <option value="D">Miniatura · curva D (10–20 × In)</option>
-            <option value="K">Miniatura · curva K (8–12 × In)</option>
-            <option value="Z">Miniatura · curva Z (2–3 × In)</option>
-            <option value="S">Curva S (13–17 × In)</option>
-            <option value="cu">Otra curva · rango del fabricante</option>
-            <option value="tm" selected>Caja moldeada termomagnético · ajuste Ii (±20 %)</option>
-            <option value="el">Caja moldeada electrónico · ajuste Ii (±10 %)</option>
-          </select>
-          <div class="grid2">
-            <div><label class="f" for="bin">Corriente nominal In (A)</label><input id="bin" type="text" inputmode="decimal"></div>
-            <div id="biiBox"><label class="f" for="bii">Ajuste instantáneo Ii (× In)</label><input id="bii" type="text" inputmode="decimal"></div>
+          <p class="sub-h">Tipo de interruptor</p>
+          <div class="chips two" role="radiogroup" aria-label="Tipo de interruptor">
+            <label class="chip"><input type="radio" name="bk" value="mcb"><span>Miniatura<small>riel DIN, hasta 125 A</small></span></label>
+            <label class="chip"><input type="radio" name="bk" value="mccb" checked><span>Caja moldeada<small>termomagnético o electrónico</small></span></label>
           </div>
-          <div class="grid2" id="kBox" hidden>
-            <div><label class="f" for="kmin">Disparo mínimo (× In)</label><input id="kmin" type="text" inputmode="decimal"></div>
-            <div><label class="f" for="kmax">Disparo máximo (× In)</label><input id="kmax" type="text" inputmode="decimal"></div>
+          <label class="f" for="bin">Corriente nominal In (A)</label>
+          <div class="inrow"><input id="bin" type="text" inputmode="decimal"><span class="unit">A</span></div>
+
+          <div id="mcbBox" hidden>
+            <label class="f" for="bt">Curva de disparo</label>
+            <select id="bt">
+              <option value="B">Curva B (3–5 × In)</option>
+              <option value="C" selected>Curva C (5–10 × In)</option>
+              <option value="D">Curva D (10–20 × In)</option>
+              <option value="K">Curva K (8–12 × In)</option>
+              <option value="Z">Curva Z (2–3 × In)</option>
+              <option value="S">Curva S (13–17 × In)</option>
+              <option value="cu">Otra curva · rango del fabricante</option>
+            </select>
+            <div class="grid2" id="kBox" hidden>
+              <div><label class="f" for="kmin">Disparo mínimo (× In)</label><input id="kmin" type="text" inputmode="decimal"></div>
+              <div><label class="f" for="kmax">Disparo máximo (× In)</label><input id="kmax" type="text" inputmode="decimal"></div>
+            </div>
+          </div>
+
+          <div id="mccbBox">
+            <label class="f">Unidad de disparo</label>
+            <div class="chips tu3" role="radiogroup" aria-label="Unidad de disparo">
+              <label class="chip"><input type="radio" name="tu" value="fix"><span>Termomagnética fija<small>magnético de fábrica</small></span></label>
+              <label class="chip"><input type="radio" name="tu" value="adj"><span>Termomagnética ajustable<small>selector magnético</small></span></label>
+              <label class="chip"><input type="radio" name="tu" value="el"><span>Electrónica<small>LI, LSI, LSIG</small></span></label>
+            </div>
+            <div id="iiBox" hidden>
+              <label class="f" for="bii" id="biiLbl">Disparo magnético Im (× In)</label>
+              <div class="inrow"><input id="bii" type="text" inputmode="decimal"><span class="unit">× In</span></div>
+              <div class="chips" id="iiQuick" style="margin-top:8px">
+                <button type="button" class="vbtn" data-ii="5">5 × In</button>
+                <button type="button" class="vbtn" data-ii="10">10 × In</button>
+              </div>
+              <label class="check" id="elIBox" hidden><input type="checkbox" id="elI" checked> La función instantánea (I) está activada</label>
+            </div>
           </div>
           <p class="hint" id="btHint"></p>
           <div class="calcout" id="tripOut" aria-live="polite"></div>
@@ -488,8 +513,14 @@ const EQ_T_HINT = {
 
 /* Interruptores: rangos de disparo instantáneo (× In) */
 const CURVES = {B: [3, 5], C: [5, 10], D: [10, 20], K: [8, 12], Z: [2, 3], S: [13, 17]};
-const BT_NAME = {B: 'curva B', C: 'curva C', D: 'curva D', K: 'curva K', Z: 'curva Z', S: 'curva S', cu: 'curva del fabricante', tm: 'termomagnético', el: 'electrónico'};
-const BT_TOL = {tm: 0.2, el: 0.1};
+const TU = {
+  fix: {tol: 0.2, sym: 'Im', name: 'termomagnética fija', lbl: 'Disparo magnético Im (× In)',
+        hint: 'Valor fijo que indica la placa o la ficha del interruptor (comúnmente 10 × In). Se aplica tolerancia de ±20 %.'},
+  adj: {tol: 0.2, sym: 'Im', name: 'termomagnética ajustable', lbl: 'Posición del selector magnético Im (× In)',
+        hint: 'Lea la posición del selector magnético del interruptor, en múltiplos de In. Se aplica tolerancia de ±20 %.'},
+  el:  {tol: 0.1, sym: 'Ii', name: 'electrónica', lbl: 'Ajuste instantáneo Ii (× In)',
+        hint: 'Ajuste Ii de la unidad electrónica, en múltiplos de In. Se aplica tolerancia de ±10 %.'}
+};
 
 /* NFPA 70E-2024 Tabla 130.7(C)(15)(a), filas AC ≤ 600 V (verificar contra la edición oficial) */
 const ROWS = {
@@ -592,17 +623,25 @@ function arcCurrent(ibf, v, gap) {
   return 10 ** (-0.097 + 0.662 * lg + 0.0966 * v + 0.000526 * gap + 0.5588 * v * lg - 0.00304 * gap * lg);
 }
 function tripCheck(b) {
-  const type = $('bt').value, In = num('bin'), ii = num('bii');
-  const out = {type, In, ii, missing: []};
+  const bk = radio('bk'), tu = radio('tu'), In = num('bin'), ii = num('bii');
+  const out = {bk, tu, In, ii, missing: []};
   if (!(In > 0)) out.missing.push('la corriente nominal del interruptor');
   let k;
-  if (CURVES[type]) k = CURVES[type];
-  else if (type === 'cu') {
-    const a = num('kmin'), b2 = num('kmax');
-    if (a > 0 && b2 >= a) k = [a, b2]; else out.missing.push('el rango de disparo de la curva (mínimo y máximo)');
+  if (bk === 'mcb') {
+    const c = $('bt').value;
+    if (CURVES[c]) { k = CURVES[c]; out.label = `miniatura, curva ${c}`; }
+    else {
+      const a = num('kmin'), b2 = num('kmax');
+      if (a > 0 && b2 >= a) { k = [a, b2]; out.label = `miniatura, curva ${nf(a, 1)}–${nf(b2, 1)} × In`; }
+      else out.missing.push('el rango de disparo de la curva (mínimo y máximo)');
+    }
+  } else if (!tu) out.missing.push('la unidad de disparo');
+  else if (!(ii > 0)) out.missing.push(`el valor ${TU[tu].sym} (× In)`);
+  else {
+    k = [ii * (1 - TU[tu].tol), ii * (1 + TU[tu].tol)];
+    out.label = `caja moldeada ${TU[tu].name}, ${TU[tu].sym} = ${nf(ii, ii % 1 ? 1 : 0)} × In`;
+    out.noInst = tu === 'el' && !$('elI').checked;
   }
-  else if (ii > 0) k = [ii * (1 - BT_TOL[type]), ii * (1 + BT_TOL[type])];
-  else out.missing.push('el ajuste instantáneo Ii');
   if (!(b.v > 0)) out.missing.push('la tensión (paso 2)');
   if (!(b.ka > 0)) out.missing.push('la corriente de cortocircuito (paso 3)');
   if (out.missing.length) return out;
@@ -611,8 +650,7 @@ function tripCheck(b) {
   out.ibfIsMin = b.kaMin > 0;
   out.Ia = arcCurrent(out.ibf, b.v / 1000, b.eq === 'switchgear' ? 32 : 25);
   out.IaMin = 0.85 * out.Ia;                                    // IEEE 1584: segunda corriente al 85 %
-  out.inst = out.IaMin * 1000 >= out.hi;
-  out.label = CURVES[type] ? BT_NAME[type] : type === 'cu' ? `curva ${nf(k[0], 1)}–${nf(k[1], 1)} × In` : `Ii ${nf(ii, ii % 1 ? 1 : 0)}× · ${BT_NAME[type]}`;
+  out.inst = !out.noInst && out.IaMin * 1000 >= out.hi;
   out.ok = true;
   return out;
 }
@@ -622,7 +660,7 @@ function readTime(b) {
     if (!tr.ok) return {t: NaN, tSrc: 'brk', tr, tTxt: ''};
     return tr.inst
       ? {t: T_2C, tSrc: 'brk', tr, tTxt: '≤ 0,03 s (instantáneo)'}
-      : {t: T_NA, tSrc: 'brk', tr, tTxt: 'No asegurado (zona térmica)'};
+      : {t: T_NA, tSrc: 'brk', tr, tTxt: tr.noInst ? 'No asegurado (sin función I)' : 'No asegurado (zona térmica)'};
   }
   const tv = num('tval');
   if (tv > 0) {
@@ -657,7 +695,9 @@ function evaluate(x) {
   if (!rows.length) return {state: 'bad', title: 'Método de tablas no aplicable', text: `El equipo seleccionado no corresponde a ${nf(x.v, 0)} V. Revise el tipo de equipo o la tensión.`};
 
   const t = x.t, fails = [];
-  if (t >= T_NA) fails.push(x.tSrc === 'brk'
+  if (t >= T_NA) fails.push(x.tSrc === 'brk' && x.tr.noInst
+    ? 'La unidad electrónica no tiene la función instantánea (I) activada: el despeje depende del retardo de corto tiempo. Confirme el tiempo con el ajuste o el estudio y use “Tengo el tiempo”.'
+    : x.tSrc === 'brk'
     ? `La corriente de arco mínima estimada (${nf(x.tr.IaMin, 2)} kA) no alcanza el disparo instantáneo del interruptor (${nf(x.tr.hi / 1000, 2)} kA). El despeje dependería de la parte térmica y puede tardar segundos.`
     : 'El tiempo de despeje no está confirmado.');
   if (x.d === 'no') fails.push('La distancia de trabajo es menor que 455 mm.');
@@ -710,7 +750,9 @@ function drawSchema(x, r) {
   const srcVal = sc && sc.kva > 0 ? `${nf(sc.kva, 0)} kVA${sc.z > 0 ? ' · ' + nf(sc.z, 1) + ' %' : ''}` : 'Alimentación';
   const cableTxt = sc && $('useCable').checked && num('sec') > 0 ? [`${nf(num('sec'), 0)} mm²`, (num('len') > 0 ? nf(num('len'), 0) + ' m' : '? m') + ' · ' + MAT[$('mat').value].name] : null;
   const tTxt = !(x.t > 0) ? '? s' : x.t >= T_NA ? (x.tSrc === 'brk' ? 'Térmico' : 'No confirmado') : x.tManual ? nf(x.t, 3) + ' s' : '≤ ' + nf(x.t, 2) + ' s';
-  const brkTxt = x.tSrc === 'brk' && num('bin') > 0 ? `${nf(num('bin'), 0)} A · ${CURVES[$('bt').value] ? 'curva ' + $('bt').value : $('bt').value === 'cu' ? 'curva fab.' : 'Ii ' + (num('bii') > 0 ? nf(num('bii'), 0) + '×' : '?')}` : 'despeje';
+  const brkTxt = x.tSrc === 'brk' && num('bin') > 0
+    ? `${nf(num('bin'), 0)} A · ${radio('bk') === 'mcb' ? ($('bt').value === 'cu' ? 'curva fab.' : 'curva ' + $('bt').value) : radio('tu') ? TU[radio('tu')].sym + ' ' + (num('bii') > 0 ? nf(num('bii'), 0) + '×' : '?') : '?'}`
+    : 'despeje';
   const ok = r.state === 'ok';
   let badge;
   if (ok) badge = `<rect class="badge-ok" x="6" y="216" width="408" height="32" rx="5"/><text x="210" y="237" text-anchor="middle" style="font-size:15px;font-weight:800">CATEGORÍA ${r.row.cat} · mín. ${PPE[r.row.cat].cal} cal/cm² · frontera ${fmm(r.row.afb)}</text>`;
@@ -915,20 +957,26 @@ function renderTimeConv(x) {
 function renderTrip(x) {
   const brk = radio('tmode') === 'brk';
   $('tBrk').hidden = !brk; $('tKnown').hidden = brk;
-  const type = $('bt').value, In = num('bin');
-  const mini = !!CURVES[type] || type === 'cu';
-  $('biiBox').hidden = mini;
-  $('kBox').hidden = type !== 'cu';
-  $('btHint').innerHTML = type === 'cu'
-    ? 'Ingrese el rango de disparo instantáneo de la ficha del fabricante.'
-    : CURVES[type]
-    ? (In > 125 ? '<span class="tconv-bad">Las curvas B, C, D, K, Z y S son de interruptores miniatura, normalmente hasta 125 A. Revise el tipo de interruptor.</span>' : 'Rango típico de la curva. Si la ficha del fabricante indica otro, use “Otra curva”.')
-    : 'Ajuste instantáneo en múltiplos de In (por ejemplo 10). Si el disparo electrónico tiene retardo de corto tiempo o la función instantánea apagada, use “Tengo el tiempo”.';
+  const bk = radio('bk'), tu = radio('tu'), In = num('bin'), c = $('bt').value;
+  $('mcbBox').hidden = bk !== 'mcb';
+  $('mccbBox').hidden = bk !== 'mccb';
+  $('kBox').hidden = c !== 'cu';
+  $('iiBox').hidden = !tu;
+  if (tu) $('biiLbl').textContent = TU[tu].lbl;
+  $('iiQuick').hidden = tu === 'el';
+  $('elIBox').hidden = tu !== 'el';
+  document.querySelectorAll('#iiQuick [data-ii]').forEach(b => b.classList.toggle('on', Number(b.dataset.ii) === num('bii')));
+  $('btHint').innerHTML = bk === 'mcb'
+    ? (c === 'cu' ? 'Ingrese el rango de disparo instantáneo de la ficha del fabricante.'
+      : In > 125 ? '<span class="tconv-bad">Los interruptores miniatura llegan normalmente hasta 125 A. Para corrientes mayores elija “Caja moldeada”.</span>'
+      : 'Rango típico de la curva. Si la ficha del fabricante indica otro, use “Otra curva”.')
+    : tu ? TU[tu].hint + (tu === 'el' ? ' Si la función I está apagada, el despeje depende del retardo de corto tiempo.' : '')
+    : 'Elija la unidad de disparo. Está indicada en la placa o en el frente del interruptor.';
   if (!brk) return;
   const tr = x.tr;
   if (!tr || !tr.ok) { $('tripOut').innerHTML = `<span class="hint" style="margin:0">Falta ${tr ? tr.missing.join(', ') : 'información'}.</span>`; return; }
   $('tripOut').innerHTML = `
-    <div class="kbig"><b class="${tr.inst ? 'tconv-ok' : 'tconv-bad'}">${tr.inst ? '≤ 0,03 s' : 'Térmico'}</b><span>${tr.inst ? 'disparo instantáneo asegurado' : 'disparo instantáneo no asegurado'}</span></div>
+    <div class="kbig"><b class="${tr.inst ? 'tconv-ok' : 'tconv-bad'}">${tr.inst ? '≤ 0,03 s' : tr.noInst ? 'Sin función I' : 'Térmico'}</b><span>${tr.inst ? 'disparo instantáneo asegurado' : 'disparo instantáneo no asegurado'}</span></div>
     <dl>
       <div><dt>Disparo instantáneo</dt><dd>${nf(tr.lo, 0)}–${nf(tr.hi, 0)} A</dd></div>
       <div><dt>Cortocircuito usado${tr.ibfIsMin ? ' (mínimo)' : ''}</dt><dd>${nf(tr.ibf, 2)} kA</dd></div>
@@ -937,6 +985,7 @@ function renderTrip(x) {
     </dl>
     <p class="hint">${tr.inst
       ? 'La corriente de arco mínima supera el umbral máximo de disparo: se toma despeje de 2 ciclos (0,03 s).'
+      : tr.noInst ? 'Sin la función instantánea el despeje depende del retardo de corto tiempo. Confirme el tiempo y use “Tengo el tiempo”.'
       : 'La corriente de arco mínima no supera el umbral máximo de disparo. Confirme el tiempo con la curva del fabricante o el estudio.'}
       Corriente de arco según IEEE 1584-2002${tr.ibfIsMin ? '; cortocircuito mínimo con c = 0,95 y cable a 70 °C' : ''}.</p>`;
 }
@@ -968,6 +1017,7 @@ $('f').addEventListener('change', e => {
   if (e.target.type === 'radio' && ['eq', 't', 'd'].includes(e.target.name)) autoAdvance();
 });
 $('f').addEventListener('submit', e => e.preventDefault());
+document.querySelectorAll('#iiQuick [data-ii]').forEach(b => b.addEventListener('click', () => { $('bii').value = b.dataset.ii; isExample = false; render(); }));
 $('tval').addEventListener('input', () => { if (num('tval') > 0) document.querySelectorAll('input[name="t"]').forEach(i => i.checked = false); });
 $('tOpts').addEventListener('change', () => { $('tval').value = ''; render(); });
 $('tag').addEventListener('input', () => render());
@@ -1116,7 +1166,7 @@ function buildPdf(x, r) {
     row('Cortocircuito usado para el disparo', `${nf(t.ibf, 2)} kA${t.ibfIsMin ? ' (mínimo)' : ''}`);
     row('Corriente de arco estimada (IEEE 1584-2002)', `${nf(t.Ia, 2)} kA`);
     row('Corriente de arco mínima (85 %)', `${nf(t.IaMin, 2)} kA`);
-    row('Disparo instantáneo', t.inst ? 'Asegurado' : 'No asegurado');
+    row('Disparo instantáneo', t.inst ? 'Asegurado' : t.noInst ? 'No asegurado (función I desactivada)' : 'No asegurado');
   } else row('Origen del dato', x.tSrc === 'manual' ? 'Valor ingresado' : 'Seleccionado (estudio o etiqueta)');
   row('Tiempo de despeje', x.tTxt || '—');
 
@@ -1205,7 +1255,7 @@ window.addEventListener('appinstalled', () => { $('installBtn').hidden = true; }
 if (!mobile.matches) $('whenUse').open = true;
 setRadio('eq', 'panel'); $('v').value = '220'; setRadio('kmode', 'calc'); setRadio('ph', '3');
 $('kva').value = '800'; $('z').value = '4'; $('sec').value = '70'; $('len').value = '30';
-renderTimeOpts('panel'); setRadio('tmode', 'brk'); $('bt').value = 'tm'; $('bin').value = '250'; $('bii').value = '10'; setRadio('d', 'yes');
+renderTimeOpts('panel'); setRadio('tmode', 'brk'); setRadio('bk', 'mccb'); setRadio('tu', 'adj'); $('bin').value = '250'; $('bii').value = '10'; setRadio('d', 'yes');
 isExample = true; step = 6; render();
 </script>
 </body>
