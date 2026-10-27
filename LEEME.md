@@ -4,6 +4,10 @@ Aplicación web de una sola página para seleccionar EPP por arco eléctrico con
 Calcula la corriente de cortocircuito, verifica el disparo instantáneo del interruptor y genera un informe PDF.
 Funciona sin conexión una vez abierta, y se puede instalar en el celular como app.
 
+Cada evaluación genera un **código QR con todos sus datos**. Al escanearlo con la cámara del celular se abre
+la app con la evaluación cargada, sin volver a ingresar nada. La información viaja dentro del QR:
+no se guarda en ningún servidor. La etiqueta de 100 × 150 mm con el QR se descarga desde el resultado.
+
 ## Archivos
 
 | Archivo | Para qué sirve |
@@ -14,6 +18,7 @@ Funciona sin conexión una vez abierta, y se puede instalar en el celular como a
 | `icons/` | Íconos de la app |
 | `fonts/` | Tipografías Barlow (licencia OFL, ver `OFL-LICENSE.txt`) |
 | `vendor/jspdf.umd.min.js` | Librería que genera el PDF (licencia MIT, ver `jspdf-LICENSE.txt`) |
+| `vendor/qrcode.js` | Librería que genera el código QR (licencia MIT, incluida en el archivo) |
 | `.nojekyll` | Necesario para GitHub Pages |
 
 ## Publicar gratis en GitHub Pages
@@ -42,8 +47,8 @@ Después de abrirla una vez con internet, funciona sin señal.
 ## Publicar cambios
 
 1. Reemplace los archivos modificados en el repositorio.
-2. En `sw.js`, suba el número de versión (por ejemplo `selector-epp-v1` → `selector-epp-v2`).
-   Así los teléfonos descargan la versión nueva la próxima vez que abran la app con internet.
+2. En `sw.js`, suba el número de versión (por ejemplo `selector-epp-v3` → `selector-epp-v4`).
+   Con internet, la app siempre abre la última versión; sin señal, usa la guardada.
 
 ## Aviso
 

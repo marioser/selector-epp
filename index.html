@@ -210,6 +210,14 @@ details.adv summary{cursor:pointer;font-size:14px;color:var(--muted);min-height:
 .ppe .note{font-size:13px;color:var(--muted);margin:8px 0 0}
 .actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .copied{font-size:14px;color:var(--ok)}
+.qrcard{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;display:grid;grid-template-columns:132px minmax(0,1fr);gap:14px;align-items:center}
+.qrcard .qr{background:#fff;border-radius:6px;padding:4px;line-height:0}
+.qrcard .qr svg{width:100%;height:auto;display:block}
+.qrcard h3{font-size:19px;margin-bottom:4px}
+.qrcard p{margin:0;font-size:13.5px;color:var(--muted)}
+.qrcard .actions{margin-top:10px}
+.fromqr{font-size:14px;background:var(--ok-bg);color:var(--ok);border:1px solid var(--ok);border-radius:10px;padding:10px 12px;font-weight:600}
+@media(max-width:400px){.qrcard{grid-template-columns:1fr}.qrcard .qr{max-width:200px}}
 .copybox{width:100%;min-height:130px;font:13px/1.4 ui-monospace,Menlo,Consolas,monospace;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--chip);color:var(--ink)}
 
 .rules{font-size:13.5px;color:var(--muted);background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
@@ -488,6 +496,7 @@ details.adv summary{cursor:pointer;font-size:14px;color:var(--muted);min-height:
 </nav>
 
 <script src="vendor/jspdf.umd.min.js"></script>
+<script src="vendor/qrcode.js"></script>
 <script>
 const $ = id => document.getElementById(id);
 const nf = (n, d = 1) => Number(n).toLocaleString('es-CO', {minimumFractionDigits: d, maximumFractionDigits: d});
@@ -574,6 +583,9 @@ const C_MAX = 1.05, C_MIN = 0.95, X_CABLE = 0.08e-3;                            
 
 let isExample = false;
 let downloads = null, lastX = null, lastR = null;
+let fromQR = null;                 // fecha (minutos) de una evaluación abierta desde un QR
+let lastEdit = Date.now();         // momento de la última modificación (va en el QR)
+const APP_URL = 'https://marioser.github.io/selector-epp/';
 const pdfButton = () => downloads && window.jspdf ? '<button type="button" class="btn red" id="pdfBtn">Descargar informe PDF</button>' : '';
 let step = 6;                 // 1..5 = pasos, 6 = resultado (modo asistente en móvil)
 const checked = new Set();
@@ -847,6 +859,7 @@ function sourceTxt(x) {
 
 function renderResult(x, r) {
   let html = isExample ? '<div class="example">EJEMPLO. Pulse “Nueva” e ingrese los datos de su equipo.</div>' : '';
+  if (fromQR) html += `<div class="fromqr">Evaluación abierta desde código QR · realizada el ${fmtDate(fromQR * 60000)}${$('author').value.trim() ? ' por ' + esc($('author').value.trim()) : ''}. Si cambia un dato, se convierte en una evaluación nueva.</div>`;
   if (r.state === 'ok') {
     const p = PPE[r.row.cat];
     const done = p.items.filter((_, i) => checked.has(r.row.cat + '-' + i)).length;
@@ -871,14 +884,14 @@ function renderResult(x, r) {
         <p class="note">Toque cada elemento al verificarlo. Los guantes aislantes y la protección contra choque eléctrico se seleccionan aparte, según la tensión.</p>
       </div>
       <div class="actions">${pdfButton()}<button type="button" class="btn ${downloads ? 'plain' : 'red'}" id="copyBtn">Copiar resumen</button><span class="copied" id="copied" role="status"></span></div>
-      <textarea class="copybox" id="copyBox" readonly hidden aria-label="Resumen para copiar"></textarea>`;
+      <textarea class="copybox" id="copyBox" readonly hidden aria-label="Resumen para copiar"></textarea>` + qrCard();
   } else if (r.state === 'warn') {
     html += `<div class="state warn"><h3>${r.title}</h3><p>Complete los pasos para obtener la categoría de EPP.</p>
       <ul class="todo">${r.todo.map(t => `<li class="${t[1] ? 'ok' : ''}">${t[1] ? t[0] : `<button type="button" data-go="${t[2]}">${t[0]}</button>`}</li>`).join('')}</ul></div>`;
   } else {
     html += `<div class="state bad"><h3>${r.title}</h3><p>${r.text}</p>${r.list ? `<ul>${r.list.map(l => `<li>${l}</li>`).join('')}</ul>` : ''}` +
       (r.why ? `<p style="margin-top:10px"><b>¿Por qué?</b> ${r.why}</p><p style="margin-top:8px"><b>Qué hacer</b></p><ul>${r.todoDo.map(l => `<li>${l}</li>`).join('')}</ul>` : '') + `</div>` +
-      (downloads ? `<div class="actions">${pdfButton()}<span class="copied" id="copied" role="status"></span></div>` : '');
+      (downloads ? `<div class="actions">${pdfButton()}<span class="copied" id="copied" role="status"></span></div>` : '') + qrCard();
   }
   html += `<details class="rules"><summary>Condiciones y supuestos</summary><ul>
     <li>Corriente de falla y tiempo de despeje confirmados para el punto de trabajo, no supuestos.</li>
@@ -897,7 +910,8 @@ function summary(x, r) {
     `Categoría de EPP: ${r.row.cat} · Frontera de arco: ${fmm(r.row.afb)} · Ropa AR mín. ${PPE[r.row.cat].cal} cal/cm²`,
     `Datos: ${nf(x.v, 0)} V AC · ${nf(x.ka, 1)} kA (${sourceTxt(x)}) · despeje ${x.tTxt}${x.tSrc === 'brk' ? ` (interruptor ${nf(x.tr.In, 0)} A, ${x.tr.label})` : ''} · distancia ≥ 455 mm`,
     `Fila: ${r.row.name}`,
-    `Fecha: ${new Date().toLocaleString('es-CO', {dateStyle: 'medium', timeStyle: 'short'})}`].filter(Boolean).join('\n');
+    `Fecha: ${fmtDate(lastEdit)}`,
+    `Ver evaluación: ${evalUrl()}`].filter(Boolean).join('\n');
 }
 
 /* ---------- Asistente (móvil) ---------- */
@@ -1010,19 +1024,19 @@ function render() {
 /* ---------- Eventos ---------- */
 let autoTimer;
 const autoAdvance = () => { if (mobile.matches) { clearTimeout(autoTimer); autoTimer = setTimeout(advance, 280); } };
-$('f').addEventListener('input', () => { isExample = false; render(); });
+$('f').addEventListener('input', () => { markEdited(); render(); });
 $('f').addEventListener('change', e => {
-  isExample = false; render();
+  markEdited(); render();
   // en móvil, avanza solo al elegir una opción de los pasos 1, 4 y 5
   if (e.target.type === 'radio' && ['eq', 't', 'd'].includes(e.target.name)) autoAdvance();
 });
 $('f').addEventListener('submit', e => e.preventDefault());
-document.querySelectorAll('#iiQuick [data-ii]').forEach(b => b.addEventListener('click', () => { $('bii').value = b.dataset.ii; isExample = false; render(); }));
+document.querySelectorAll('#iiQuick [data-ii]').forEach(b => b.addEventListener('click', () => { $('bii').value = b.dataset.ii; markEdited(); render(); }));
 $('tval').addEventListener('input', () => { if (num('tval') > 0) document.querySelectorAll('input[name="t"]').forEach(i => i.checked = false); });
 $('tOpts').addEventListener('change', () => { $('tval').value = ''; render(); });
-$('tag').addEventListener('input', () => render());
+$('s6').addEventListener('input', () => { markEdited(); render(); });
 document.querySelectorAll('#vchips [data-v]').forEach(b => b.addEventListener('click', () => {
-  $('v').value = b.dataset.v; isExample = false; render(); autoAdvance();
+  $('v').value = b.dataset.v; markEdited(); render(); autoAdvance();
 }));
 $('f').addEventListener('keydown', e => {
   if (e.key === 'Enter' && e.target.matches('input[type=text]')) { e.preventDefault(); e.target.blur(); if (['v', 'ka'].includes(e.target.id)) advance(); }
@@ -1032,8 +1046,9 @@ $('schema').addEventListener('click', e => { const g = e.target.closest('[data-g
 $('result').addEventListener('click', e => {
   const g = e.target.closest('[data-go]'); if (g) return go(Number(g.dataset.go));
   const b = e.target.closest('button[data-k]');
-  if (b) { const k = b.dataset.k; checked.has(k) ? checked.delete(k) : checked.add(k); render(); return; }
-  if (e.target.id === 'pdfBtn') { savePdf(); return; }
+  if (b) { const k = b.dataset.k; checked.has(k) ? checked.delete(k) : checked.add(k); markEdited(); render(); return; }
+  if (e.target.id === 'pdfBtn') { savePdf('report'); return; }
+  if (e.target.id === 'labelBtn') { savePdf('label'); return; }
   if (e.target.id === 'copyBtn') {
     const text = $('result').dataset.summary, box = $('copyBox');
     const fallback = () => { box.hidden = false; box.value = text; box.focus(); box.select(); $('copied').textContent = 'Texto seleccionado: use Copiar del teléfono'; };
@@ -1042,7 +1057,7 @@ $('result').addEventListener('click', e => {
 });
 
 function newEval() {
-  $('f').reset(); lastEqT = null; $('tag').value = ''; $('task').value = ''; $('xr').value = '5'; checked.clear(); isExample = false;
+  $('f').reset(); lastEqT = null; $('tag').value = ''; $('task').value = ''; $('xr').value = '5'; checked.clear(); markEdited();
   go(1);
 }
 $('newBtn').addEventListener('click', newEval);
@@ -1050,6 +1065,146 @@ $('backBtn').addEventListener('click', () => step === 6 ? go(5) : step === 1 ? g
 $('nextBtn').addEventListener('click', () => step === 6 ? newEval() : advance());
 mobile.addEventListener('change', render);
 
+
+
+/* ---------- Código QR con los datos de la evaluación ---------- */
+const SNAP_IDS = ['v', 'ka', 'kva', 'z', 'xr', 'mat', 'sec', 'len', 'bin', 'bii', 'bt', 'kmin', 'kmax', 'tval', 'tunit', 'hz', 'tag', 'task', 'author'];
+const SNAP_CHK = ['useCable', 'elI'];
+const SNAP_RAD = ['eq', 'kmode', 'ph', 'tmode', 'bk', 'tu', 't', 'd'];
+const fmtDate = ms => new Date(ms).toLocaleString('es-CO', {dateStyle: 'medium', timeStyle: 'short'});
+
+/* Claves cortas y sin valores por defecto, para que el QR sea pequeño */
+const SNAP_KEY = {v: 'V', ka: 'K', kva: 'S', z: 'Z', xr: 'R', mat: 'M', sec: 'A', len: 'L', bin: 'I', bii: 'J', bt: 'B', kmin: 'm', kmax: 'x',
+  tval: 'T', tunit: 'U', hz: 'H', tag: 'g', task: 'k', author: 'a', useCable: 'c', elI: 'i',
+  eq: 'e', kmode: 'q', ph: 'p', tmode: 'o', bk: 'b', tu: 'u', t: 't', d: 'd'};
+const SNAP_DEF = {xr: '5', mat: 'cu', bt: 'C', tunit: 's', hz: '60', useCable: 1, elI: 1, ph: '3'};
+function snapshot() {
+  const o = {_v: 1, _dt: Math.floor(lastEdit / 60000)};
+  SNAP_IDS.forEach(id => { const v = $(id).value.trim(); if (v) o[id] = v; });
+  SNAP_CHK.forEach(id => { o[id] = $(id).checked ? 1 : 0; });
+  SNAP_RAD.forEach(n => { const v = radio(n); if (v) o[n] = v; });
+  if (checked.size) o._ck = [...checked].join(',');
+  return o;
+}
+function packSnap(o) {
+  const c = {'0': o._dt};
+  Object.keys(SNAP_KEY).forEach(k => { if (o[k] !== undefined && o[k] !== '' && o[k] !== SNAP_DEF[k]) c[SNAP_KEY[k]] = o[k]; });
+  if (o._ck) c.y = o._ck.split(',').map(s => s.replace('-', '')).join('');   // "2-0,2-3" -> "2023"
+  return c;
+}
+function unpackSnap(c) {
+  const o = {_v: 1, _dt: c['0']};
+  Object.keys(SNAP_KEY).forEach(k => { o[k] = c[SNAP_KEY[k]] !== undefined ? c[SNAP_KEY[k]] : SNAP_DEF[k]; });
+  if (c.y) o._ck = (c.y.match(/../g) || []).map(s => s[0] + '-' + s[1]).join(',');
+  return o;
+}
+function encodeSnap(o) {
+  const bytes = new TextEncoder().encode(JSON.stringify(packSnap(o)));
+  let bin = ''; bytes.forEach(b => bin += String.fromCharCode(b));
+  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+function decodeSnap(code) {
+  const b64 = code.replace(/-/g, '+').replace(/_/g, '/');
+  const bin = atob(b64 + '==='.slice((b64.length + 3) % 4));
+  const c = JSON.parse(new TextDecoder().decode(Uint8Array.from(bin, ch => ch.charCodeAt(0))));
+  if (!c || typeof c['0'] !== 'number') throw new Error('formato');
+  return unpackSnap(c);
+}
+const evalUrl = () => APP_URL + '#e=' + encodeSnap(snapshot());
+
+function makeQR(text) {
+  if (!window.qrcode) return null;
+  const q = window.qrcode(0, 'M'); q.addData(text, 'Byte'); q.make(); return q;
+}
+function qrSvg(q) {
+  const n = q.getModuleCount(); let d = '';
+  for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (q.isDark(r, c)) d += `M${c} ${r}h1v1h-1z`;
+  return `<svg viewBox="-2 -2 ${n + 4} ${n + 4}" shape-rendering="crispEdges" role="img" aria-label="Código QR de la evaluación"><rect x="-2" y="-2" width="${n + 4}" height="${n + 4}" fill="#fff"/><path d="${d}" fill="#000"/></svg>`;
+}
+function qrCard() {
+  const q = makeQR(evalUrl());
+  if (!q) return '';
+  return `<div class="qrcard">
+    <div class="qr">${qrSvg(q)}</div>
+    <div><h3>Código QR de la evaluación</h3>
+      <p>Imprímalo y péguelo en el equipo. Al escanearlo con la cámara del celular se abre esta evaluación con todos los datos, sin volver a ingresarlos.</p>
+      <div class="actions">${downloads && window.jspdf ? '<button type="button" class="btn red" id="labelBtn">Descargar etiqueta con QR</button>' : ''}</div>
+    </div></div>`;
+}
+function drawQR(doc, q, x, y, size) {
+  const n = q.getModuleCount(), cell = size / n;
+  doc.setFillColor(255, 255, 255); doc.rect(x - 1.5, y - 1.5, size + 3, size + 3, 'F');
+  doc.setFillColor(0, 0, 0);
+  for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (q.isDark(r, c)) doc.rect(x + c * cell, y + r * cell, cell + 0.02, cell + 0.02, 'F');
+}
+
+/* Abre una evaluación guardada en el QR (enlace con #e=...) */
+function loadFromHash() {
+  const m = (location.hash || '').match(/^#e=([A-Za-z0-9_-]+)/);
+  if (!m) return false;
+  try {
+    const o = decodeSnap(m[1]);
+    $('f').reset(); lastEqT = null; checked.clear();
+    renderTimeOpts(o.eq || '');
+    SNAP_RAD.forEach(n => setRadio(n, o[n] || ''));
+    SNAP_IDS.forEach(id => { const el = $(id); if (o[id] != null) el.value = o[id]; else if (el.tagName !== 'SELECT') el.value = id === 'xr' ? '5' : ''; });
+    SNAP_CHK.forEach(id => { $(id).checked = !!o[id]; });
+    (o._ck || '').split(',').filter(Boolean).forEach(k => checked.add(k));
+    fromQR = o._dt; lastEdit = o._dt * 60000; isExample = false; step = 6;
+    if (o.kva || o.z) setRadio('kmode', o.kmode || 'calc');
+    render();
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+function markEdited() {
+  isExample = false; lastEdit = Date.now();
+  if (fromQR) { fromQR = null; try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {} }
+}
+
+/* Etiqueta para imprimir: 100 × 150 mm */
+function buildLabel(x, r) {
+  const {jsPDF} = window.jspdf;
+  const doc = new jsPDF({unit: 'mm', format: [100, 150]});
+  const W = 100, M = 6, CW = W - 2 * M;
+  const font = (sz, bold) => { doc.setFont('helvetica', bold ? 'bold' : 'normal'); doc.setFontSize(sz); };
+  doc.setDrawColor(17, 17, 17); doc.setLineWidth(1); doc.rect(2, 2, W - 4, 146);
+  let y = 2;
+  if (r.state === 'ok') {
+    const p = PPE[r.row.cat];
+    doc.setFillColor(242, 140, 0); doc.rect(2, y, W - 4, 14, 'F');
+    font(15, true); doc.setTextColor(17, 17, 17); doc.text(P('ADVERTENCIA'), W / 2, y + 6.5, {align: 'center'});
+    font(9, true); doc.text(P('RIESGO DE ARCO ELÉCTRICO'), W / 2, y + 11.5, {align: 'center'});
+    y += 20;
+    doc.setLineWidth(0.6); doc.rect(M, y, CW, 22); doc.line(W / 2, y, W / 2, y + 22);
+    font(7, true); doc.setTextColor(68, 68, 68); doc.text(P('CATEGORÍA DE EPP'), M + 3, y + 5); doc.text(P('FRONTERA DE ARCO'), W / 2 + 3, y + 5);
+    font(26, true); doc.setTextColor(17, 17, 17); doc.text(String(r.row.cat), M + 3, y + 17);
+    font(18, true); doc.text(P(fmm(r.row.afb)), W / 2 + 3, y + 17);
+    y += 28;
+    font(8.5); [['Ropa AR mínima', `${p.cal} cal/cm²`], ['Tensión', `${nf(x.v, 0)} V AC`], ['Corriente de falla', `${nf(x.ka, 1)} kA`],
+      ['Tiempo de despeje', x.tTxt], ['Distancia de trabajo', '>= 455 mm']].forEach(([k, v]) => {
+      doc.setTextColor(68, 68, 68); font(8.5); doc.text(P(k), M, y); doc.setTextColor(17, 17, 17); font(8.5, true); doc.text(P(v), W - M, y, {align: 'right'}); y += 5;
+    });
+  } else {
+    doc.setFillColor(163, 23, 15); doc.rect(2, y, W - 4, 14, 'F');
+    font(12, true); doc.setTextColor(255, 255, 255); doc.text(P('MÉTODO DE TABLAS NO APLICABLE'), W / 2, y + 6.5, {align: 'center'});
+    font(8.5, true); doc.text(P('Requiere análisis de energía incidente'), W / 2, y + 11.5, {align: 'center'});
+    y += 22;
+    font(8.5); doc.setTextColor(17, 17, 17);
+    doc.splitTextToSize(P([r.text, ...(r.list || [])].join(' ')), CW).slice(0, 9).forEach(l => { doc.text(l, M, y); y += 4.2; });
+  }
+  const q = makeQR(evalUrl());
+  const qs = 46, qy = 150 - 6 - 22 - qs;
+  if (q) drawQR(doc, q, (W - qs) / 2, qy, qs);
+  font(8, true); doc.setTextColor(17, 17, 17);
+  doc.text(P('Escanee para ver la evaluación completa'), W / 2, qy + qs + 5, {align: 'center'});
+  font(8); doc.setTextColor(68, 68, 68);
+  doc.text(P(`Equipo: ${x.tag || '—'}`), W / 2, qy + qs + 10, {align: 'center'});
+  doc.text(P(`Fecha: ${fmtDate(lastEdit)}`), W / 2, qy + qs + 14, {align: 'center'});
+  font(6.5); doc.text(P('NFPA 70E-2024 · Método de tablas · No reemplaza la etiqueta del fabricante ni el estudio'), W / 2, 146, {align: 'center'});
+  return doc;
+}
 
 /* ---------- Informe PDF ---------- */
 const EQ_FULL = {panel: 'Tablero de distribución u otro equipo similar', mcc: 'Centro de control de motores (CCM) clase 600 V',
@@ -1194,6 +1349,18 @@ function buildPdf(x, r) {
    'Disparo instantáneo: se considera asegurado cuando la corriente de arco mínima (85 % del valor IEEE 1584-2002) supera el umbral máximo del interruptor; en ese caso se toma despeje de 2 ciclos (0,03 s).',
    'Valores de la tabla cargados para AC hasta 600 V. Deben confirmarse contra la edición oficial de NFPA 70E-2024.'].forEach(t => para('• ' + t, 8.5, 4));
 
+  // Código QR
+  const qrr = makeQR(evalUrl());
+  if (qrr) {
+    room(48); y += 4;
+    drawQR(doc, qrr, M, y, 36);
+    font(11, true); ink(); doc.text('Código QR de esta evaluación', M + 44, y + 6);
+    font(9); muted();
+    doc.splitTextToSize(P('Escanee este código con la cámara del celular para abrir esta evaluación en el Selector de EPP con todos los datos cargados, sin volver a ingresarlos.'), CW - 44)
+      .forEach((l, i) => doc.text(l, M + 44, y + 12 + i * 4.4));
+    y += 40;
+  }
+
   // Firmas
   room(28); y += 14;
   doc.setDrawColor(27, 26, 25); doc.setLineWidth(0.3);
@@ -1210,15 +1377,15 @@ function buildPdf(x, r) {
   return doc;
 }
 
-async function savePdf() {
+async function savePdf(kind) {
   const msg = $('copied');
   if (!downloads || !lastX || !lastR) return;
   try {
-    const doc = buildPdf(lastX, lastR);
+    const doc = kind === 'label' ? buildLabel(lastX, lastR) : buildPdf(lastX, lastR);
     const d = new Date(), pad = n => String(n).padStart(2, '0');
     const name = (lastX.tag || 'equipo').replace(/[^\w\-áéíóúñÁÉÍÓÚÑ ]+/g, '').trim().replace(/\s+/g, '_').slice(0, 40) || 'equipo';
-    const res = await downloads.save({filename: `Informe_EPP_${name}_${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}.pdf`, data: doc.output('blob')});
-    if (msg) msg.textContent = res.status === 'saved' ? 'Informe descargado' : 'Informe enviado';
+    const res = await downloads.save({filename: `${kind === 'label' ? 'Etiqueta_QR' : 'Informe_EPP'}_${name}_${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}.pdf`, data: doc.output('blob')});
+    if (msg) msg.textContent = res.status === 'saved' ? (kind === 'label' ? 'Etiqueta descargada' : 'Informe descargado') : 'Archivo enviado';
   } catch (err) {
     if (!msg) return;
     const code = err && err.code;
@@ -1252,11 +1419,14 @@ $('installBtn').addEventListener('click', async () => {
 window.addEventListener('appinstalled', () => { $('installBtn').hidden = true; });
 
 /* Inicio: ejemplo calculado (800 kVA, 4 %, 220 V, Cu 70 mm² × 30 m) mostrando el resultado */
-if (!mobile.matches) $('whenUse').open = true;
+if (!mobile.matches && !/^#e=/.test(location.hash || '')) $('whenUse').open = true;
+if (!loadFromHash()) {
 setRadio('eq', 'panel'); $('v').value = '220'; setRadio('kmode', 'calc'); setRadio('ph', '3');
 $('kva').value = '800'; $('z').value = '4'; $('sec').value = '70'; $('len').value = '30';
 renderTimeOpts('panel'); setRadio('tmode', 'brk'); setRadio('bk', 'mccb'); setRadio('tu', 'adj'); $('bin').value = '250'; $('bii').value = '10'; setRadio('d', 'yes');
 isExample = true; step = 6; render();
+}
+window.addEventListener('hashchange', loadFromHash);
 </script>
 </body>
 </html>
