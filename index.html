@@ -1,0 +1,1212 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Selector de EPP · Arco eléctrico</title>
+<meta name="description" content="Selección de EPP por arco eléctrico con el método de tablas de NFPA 70E-2024: cálculo de cortocircuito, verificación del disparo del interruptor e informe PDF.">
+<meta name="theme-color" content="#141414">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Selector EPP">
+<style>
+@font-face{font-family:'Barlow';font-style:normal;font-weight:400;font-display:swap;src:url(fonts/barlow-latin-400-normal.woff2) format('woff2')}
+@font-face{font-family:'Barlow';font-style:normal;font-weight:500;font-display:swap;src:url(fonts/barlow-latin-500-normal.woff2) format('woff2')}
+@font-face{font-family:'Barlow';font-style:normal;font-weight:600;font-display:swap;src:url(fonts/barlow-latin-600-normal.woff2) format('woff2')}
+@font-face{font-family:'Barlow';font-style:normal;font-weight:700;font-display:swap;src:url(fonts/barlow-latin-700-normal.woff2) format('woff2')}
+@font-face{font-family:'Barlow Condensed';font-style:normal;font-weight:600;font-display:swap;src:url(fonts/barlow-condensed-latin-600-normal.woff2) format('woff2')}
+@font-face{font-family:'Barlow Condensed';font-style:normal;font-weight:700;font-display:swap;src:url(fonts/barlow-condensed-latin-700-normal.woff2) format('woff2')}
+@font-face{font-family:'Barlow Condensed';font-style:normal;font-weight:800;font-display:swap;src:url(fonts/barlow-condensed-latin-800-normal.woff2) format('woff2')}
+/* Base */
+:root{padding-top:env(safe-area-inset-top,0px)}
+body{margin:0}
+img{max-width:100%}
+[hidden]{display:none!important}
+</style>
+<style>
+/* Layout: móvil primero — asistente de un paso por pantalla con esquema arriba y barra de navegación al pulgar; en escritorio, pasos a la izquierda y esquema + resultado fijos a la derecha */
+:root{
+  --bg:#f3f2f0; --surface:#ffffff; --ink:#1b1a19; --muted:#625f5b; --line:#dcd8d3; --chip:#f0eeeb;
+  --brand:#e01b22; --brand-ink:#ffffff; --focus:#e01b22; --bar:#141414; --bar-ink:#ffffff;
+  --ok:#17663a; --ok-bg:#e6f5ec; --warn:#7a5000; --warn-bg:#fff3d6; --bad:#a3170f; --bad-bg:#fdecea;
+  --label-orange:#f28c00; --label-ink:#111;
+  --display:"Barlow Condensed","Arial Narrow",Arial,sans-serif;
+  --body:"Barlow",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#151413; --surface:#201f1d; --ink:#f1efec; --muted:#aaa49d; --line:#3a3734; --chip:#2b2927;
+  --brand:#ff3b41; --brand-ink:#ffffff; --focus:#ff5a5f; --bar:#0c0c0b; --bar-ink:#ffffff;
+  --ok:#6fd49a; --ok-bg:#16301f; --warn:#f1c25b; --warn-bg:#352a10; --bad:#ff8a80; --bad-bg:#3a1714;
+  --label-orange:#f59a1b; --label-ink:#111; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#151413; --surface:#201f1d; --ink:#f1efec; --muted:#aaa49d; --line:#3a3734; --chip:#2b2927;
+  --brand:#ff3b41; --brand-ink:#ffffff; --focus:#ff5a5f; --bar:#0c0c0b; --bar-ink:#ffffff;
+  --ok:#6fd49a; --ok-bg:#16301f; --warn:#f1c25b; --warn-bg:#352a10; --bad:#ff8a80; --bad-bg:#3a1714;
+  --label-orange:#f59a1b; --label-ink:#111; color-scheme:dark}
+
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--ink);font:16px/1.45 var(--body);-webkit-text-size-adjust:100%}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bar)}
+button,input,select{font:inherit;color:inherit}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0}
+.gut{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+
+/* Encabezado */
+.top{background:var(--bar);color:var(--bar-ink);padding-block:10px}
+.top-in{max-width:1120px;margin:0 auto;display:flex;align-items:center;gap:10px}
+.logo{width:30px;height:26px;background:#e01b22;clip-path:polygon(50% 0,100% 100%,0 100%);display:grid;place-items:end center;font:800 13px var(--display);color:#fff;padding-bottom:2px;flex-shrink:0}
+.top h1{font-size:21px;letter-spacing:.02em;font-weight:700;line-height:1.1}
+.top p{margin:0;font-size:12.5px;color:#cfcac4}
+.top .new{flex-shrink:0}
+.top-in > div:nth-child(2){margin-right:auto}
+#installBtn{flex-shrink:0}
+
+.warnbar{max-width:1120px;margin:12px auto 0}
+.warnbar details{border-left:5px solid var(--brand);background:var(--surface);border-radius:8px;padding:9px 12px;font-size:14px}
+.warnbar summary{cursor:pointer;font-weight:700}
+.warnbar p{margin:6px 0 0}
+.when{display:grid;grid-template-columns:1fr 1fr;gap:6px 20px;margin-top:10px}
+.when-h{margin:0 0 4px;font-weight:700;font-size:14.5px}
+.when-h.ok{color:var(--ok)}.when-h.no{color:var(--bad)}
+.ticks{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.ticks li{display:flex;gap:8px;align-items:flex-start;font-size:14px;line-height:1.35}
+.ticks li::before{flex-shrink:0;width:20px;height:20px;border-radius:5px;display:grid;place-items:center;font-weight:800;font-size:13px;margin-top:1px}
+.ticks li.tk-y::before{content:"✓";background:var(--ok-bg);color:var(--ok);border:1.5px solid var(--ok)}
+.ticks li.tk-n::before{content:"✕";background:var(--bad-bg);color:var(--bad);border:1.5px solid var(--bad)}
+.when-foot{font-size:12.5px;color:var(--muted);margin:10px 0 0}
+@media(max-width:860px){.when{grid-template-columns:1fr}}
+
+/* Estructura */
+.wrap{max-width:1120px;margin:0 auto;padding-block:12px 40px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,420px);gap:20px;align-items:start}
+.steps{display:grid;gap:14px;min-width:0}
+.step{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 16px 18px;scroll-margin-top:12px}
+.step-h{display:flex;align-items:baseline;gap:10px;margin-bottom:4px}
+.n{font:800 15px var(--display);background:var(--ink);color:var(--surface);min-width:26px;height:26px;border-radius:6px;display:inline-grid;place-items:center;flex-shrink:0;transform:translateY(-2px)}
+.step.done .n{background:var(--ok);color:var(--surface)}
+.step h2{font-size:22px;font-weight:700;letter-spacing:.01em}
+.q{margin:0 0 12px 36px;color:var(--muted);font-size:14.5px}
+.body{margin-left:36px}
+
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{position:relative;display:block}
+.chip input{position:absolute;opacity:0;inset:0;margin:0;cursor:pointer;width:100%;height:100%}
+.chip span{display:flex;flex-direction:column;justify-content:center;min-height:48px;padding:10px 14px;border:1.5px solid var(--line);background:var(--chip);border-radius:10px;font-weight:600;font-size:15.5px;cursor:pointer;line-height:1.2}
+.chip small{display:block;font-weight:400;color:var(--muted);font-size:12.5px;margin-top:3px}
+.chip input:checked+span{border-color:var(--ink);background:var(--ink);color:var(--surface)}
+.chip input:checked+span small{color:inherit;opacity:.8}
+.chip input:focus-visible+span{outline:3px solid var(--focus);outline-offset:2px}
+.chips.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}
+.chips.two{display:grid;grid-template-columns:1fr 1fr}
+.vbtn{min-height:48px;min-width:74px;padding:8px 12px;border-radius:10px;border:1.5px solid var(--line);background:var(--chip);font-weight:700;font-size:16px;cursor:pointer;font-variant-numeric:tabular-nums}
+.vbtn.on{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+
+label.f{display:block;font-size:14px;font-weight:600;margin:14px 0 6px}
+.inrow{display:flex;gap:8px;align-items:center}
+.inrow input{max-width:200px}
+.unit{color:var(--muted);font-weight:700;font-size:17px}
+input[type=text],select{width:100%;min-height:50px;padding:10px 12px;border:1.5px solid var(--line);border-radius:10px;background:var(--surface);font-size:19px;font-weight:600;font-variant-numeric:tabular-nums}
+select{font-size:17px}
+input.free{font-size:17px;font-weight:500}
+input:focus-visible,select:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid var(--focus);outline-offset:1px}
+.hint{font-size:13.5px;color:var(--muted);margin:8px 0 0}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:0 10px}
+.grid3{display:grid;grid-template-columns:1.1fr 1fr 1fr;gap:0 10px}
+.check{display:flex;align-items:center;gap:10px;margin:16px 0 0;font-size:15.5px;font-weight:600;cursor:pointer;min-height:40px}
+.check input{width:22px;height:22px;accent-color:var(--brand)}
+.calc{margin-top:12px;padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--chip)}
+.calc .sub-h{font-size:12px;text-transform:uppercase;letter-spacing:.06em;font-weight:700;color:var(--muted);margin:0 0 6px}
+.calcout{margin-top:14px;border-radius:10px;padding:12px;background:var(--surface);border:1.5px solid var(--line)}
+.calcout .kbig{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.calcout .kbig b{font:800 34px/1 var(--display);font-variant-numeric:tabular-nums}
+.calcout .kbig span{font-size:14px;color:var(--muted)}
+.calcout dl{margin:10px 0 0;display:grid;gap:2px;font-size:14px}
+.calcout dl div{display:flex;justify-content:space-between;gap:10px;border-top:1px solid var(--line);padding:5px 0}
+.tconv-ok{color:var(--ok);font-weight:600}.tconv-bad{color:var(--bad);font-weight:600}
+.calcout dt{color:var(--muted)}.calcout dd{margin:0;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+details.adv{margin-top:12px}
+details.adv summary{cursor:pointer;font-size:14px;color:var(--muted);min-height:28px}
+
+.btn{border:0;border-radius:10px;min-height:48px;padding:10px 18px;font-weight:700;font-size:16px;cursor:pointer}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.red{background:var(--brand);color:var(--brand-ink)}
+.btn.line{background:transparent;border:1.5px solid #ffffff66;color:#fff;min-height:40px;padding:6px 14px;font-size:15px}
+.btn.plain{background:var(--chip);border:1.5px solid var(--line);color:var(--ink)}
+
+/* Lado derecho */
+.side{position:sticky;top:calc(env(safe-area-inset-top,0px) + 12px);display:grid;gap:12px;min-width:0}
+.res{display:grid;gap:12px;min-width:0}
+.example{font-size:14px;background:var(--warn-bg);color:var(--warn);border-radius:10px;padding:10px 12px;font-weight:600}
+
+/* Esquema */
+.schema{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 10px 8px}
+.schema-h{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin:0 4px 2px}
+.schema h3{font-size:18px}
+.schema-h span{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+#schema{display:block;width:100%;height:auto}
+#schema text{font-family:var(--body)}
+#schema .lbl{fill:var(--muted);font-size:11px;letter-spacing:.06em;font-weight:600}
+#schema .val{fill:currentColor;font-size:14.5px;font-weight:700}
+#schema .sub{fill:currentColor;font-size:12.5px}
+#schema .tiny{fill:currentColor;font-size:11px}
+#schema .s-ok{color:var(--ink)}
+#schema .s-bad{color:var(--bad)}
+#schema .s-empty{color:var(--muted);opacity:.6}
+#schema .s-empty [stroke]{stroke-dasharray:4 3}
+#schema .s-cur{opacity:1}
+#schema [data-go]{cursor:pointer}
+#schema .hit{fill:transparent}
+#schema .cur-ring{fill:none;stroke:var(--brand);stroke-width:2;stroke-dasharray:3 3}
+#schema .afb{stroke:var(--brand)}
+#schema .afb-off{stroke:var(--muted);opacity:.5}
+#schema .badge-ok{fill:var(--label-orange)} #schema .badge-ok+text{fill:#111}
+#schema .badge-warn{fill:var(--warn-bg);stroke:var(--warn)} #schema .badge-warn+text{fill:var(--warn)}
+#schema .badge-bad{fill:var(--bad-bg);stroke:var(--bad)} #schema .badge-bad+text{fill:var(--bad)}
+.schema .tip{font-size:12.5px;color:var(--muted);margin:2px 4px 0}
+
+/* Etiqueta de resultado */
+.label{border:3px solid var(--label-ink);border-radius:6px;overflow:hidden;background:#fff;color:#111}
+.label .hd{background:var(--label-orange);color:var(--label-ink);font:800 24px/1 var(--display);letter-spacing:.05em;padding:10px 12px;display:flex;align-items:center;gap:10px}
+.label .bd{padding:12px}
+.big{display:grid;grid-template-columns:1fr 1fr;border:2px solid #111;border-radius:4px}
+.big div{padding:10px 12px;min-width:0}
+.big div+div{border-left:2px solid #111}
+.big span{display:block;font-size:12px;text-transform:uppercase;letter-spacing:.06em;font-weight:600;color:#444}
+.big b{display:block;font:800 clamp(34px,10vw,44px)/1 var(--display);margin-top:4px;font-variant-numeric:tabular-nums}
+.facts{margin:12px 0 0;display:grid;gap:2px;font-size:14.5px}
+.facts div{display:flex;justify-content:space-between;gap:10px;border-bottom:1px solid #ddd;padding:5px 0}
+.facts dt{color:#444}.facts dd{margin:0;font-weight:700;text-align:right;font-variant-numeric:tabular-nums}
+.disc{font-size:12px;color:#555;margin:10px 0 0}
+
+.state{border-radius:12px;padding:16px;border:2px solid}
+.state h3{font-size:24px;margin-bottom:6px}
+.state p{margin:0;font-size:15px}
+.state ul{margin:8px 0 0;padding-left:20px;font-size:15px}
+.state.warn{background:var(--warn-bg);color:var(--warn);border-color:var(--warn)}
+.state.bad{background:var(--bad-bg);color:var(--bad);border-color:var(--bad)}
+.todo{list-style:none;padding:0!important}
+.todo li{padding:3px 0}
+.todo button{background:none;border:0;padding:4px 0;color:inherit;font:inherit;text-decoration:underline;cursor:pointer}
+.todo li.ok{opacity:.6}
+.todo li::before{content:"○ ";font-weight:700}
+.todo li.ok::before{content:"✓ "}
+
+.ppe{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 14px 12px}
+.ppe-h{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:6px}
+.ppe h3{font-size:20px}
+.ppe-h span{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.ppe ul{margin:0;padding:0;list-style:none;display:grid}
+.ppe li button{display:flex;gap:12px;align-items:flex-start;width:100%;text-align:left;background:none;border:0;border-bottom:1px solid var(--line);padding:11px 2px;font-size:15px;cursor:pointer;min-height:48px}
+.ppe li:last-child button{border-bottom:0}
+.ppe li i{flex-shrink:0;width:24px;height:24px;border:2px solid var(--muted);border-radius:6px;display:grid;place-items:center;font-style:normal;font-weight:800;font-size:14px}
+.ppe li.on i{background:var(--ok);border-color:var(--ok);color:var(--surface)}
+.ppe li.on span{color:var(--muted);text-decoration:line-through;text-decoration-color:var(--line)}
+.ppe .note{font-size:13px;color:var(--muted);margin:8px 0 0}
+.actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.copied{font-size:14px;color:var(--ok)}
+.copybox{width:100%;min-height:130px;font:13px/1.4 ui-monospace,Menlo,Consolas,monospace;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--chip);color:var(--ink)}
+
+.rules{font-size:13.5px;color:var(--muted);background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.rules summary{cursor:pointer;font-weight:600;color:var(--ink);min-height:28px}
+.rules ul{padding-left:18px;margin:8px 0 0}
+
+.nav{display:none}
+.progress{display:none}
+
+@media(max-width:860px){
+  .top p{display:none}
+  .wrap{grid-template-columns:1fr;gap:12px;padding-block:10px calc(110px + env(safe-area-inset-bottom,0px))}
+  .side{display:contents}
+  .schema{order:-2}
+  .progress{display:flex;order:-1;align-items:center;gap:10px;font-size:14px;font-weight:600;color:var(--muted)}
+  .progress .segs{display:flex;gap:4px;flex:1}
+  .progress .segs i{flex:1;height:6px;border-radius:3px;background:var(--line)}
+  .progress .segs i.done{background:var(--ok)}
+  .progress .segs i.cur{background:var(--ink)}
+  .res{order:1}
+  .q,.body{margin-left:0}
+  .step{padding:14px}
+  .chips.cards{grid-template-columns:1fr 1fr}
+  .chip span{min-height:56px;padding:10px 12px;font-size:15px}
+  .vchips{display:grid!important;grid-template-columns:repeat(3,1fr)}
+  .vbtn{min-width:0}
+  .inrow input{max-width:none}
+  .grid3{grid-template-columns:1fr 1fr}
+  .grid3 > :first-child{grid-column:1 / -1}
+  /* modo asistente */
+  .wiz .step{display:none}
+  .wiz .step.cur{display:block}
+  .wiz .res{display:none}
+  .wiz.view-res .res{display:grid}
+  .wiz.view-res .steps{display:none}
+  .wiz.view-res #s6{display:block}
+  .wiz.view-res .progress{display:none}
+  .nav{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:5;gap:10px;align-items:center;background:var(--surface);border-top:1px solid var(--line);box-shadow:0 -4px 16px #0000001a;
+    padding-top:10px;padding-bottom:calc(10px + env(safe-area-inset-bottom,0px))}
+  .nav .btn{flex:1;min-height:52px;font-size:17px}
+  .nav .btn.plain{flex:0 0 auto;min-width:96px}
+}
+@media (prefers-reduced-motion:no-preference){
+  .label,.state,.wiz .step.cur{animation:pop .2s ease-out}
+  @keyframes pop{from{opacity:.4;transform:translateY(6px)}to{opacity:1;transform:none}}
+}
+</style>
+</head>
+<body>
+
+
+<header class="top gut">
+  <div class="top-in">
+    <div class="logo" aria-hidden="true">!</div>
+    <div>
+      <h1>Selector de EPP · Arco eléctrico</h1>
+      <p>Cortocircuito + método de tablas NFPA 70E-2024 · Tabla 130.7(C)(15)(a) · AC hasta 600 V</p>
+    </div>
+    <button class="btn line" type="button" id="installBtn" hidden>Instalar</button>
+    <button class="btn line new" type="button" id="newBtn">Nueva</button>
+  </div>
+</header>
+
+<div class="warnbar gut"><details id="whenUse"><summary>¿Cuándo puedo usar este método?</summary>
+  <div class="when">
+    <div>
+      <p class="when-h ok">Puede usarlo si se cumple todo esto</p>
+      <ul class="ticks">
+        <li class="tk-y">Equipo de corriente alterna (AC) de 600 V o menos: tablero, CCM, switchgear u otro equipo de 277–600 V.</li>
+        <li class="tk-y">La corriente de falla en el punto de trabajo es conocida (etiqueta o estudio) o fue calculada aquí con datos de placa.</li>
+        <li class="tk-y">El tiempo de despeje de la protección está confirmado por el estudio, la etiqueta o la curva del fabricante.</li>
+        <li class="tk-y">Trabajará a 455 mm (18 in) o más de las partes energizadas.</li>
+        <li class="tk-y">El equipo y su protección están instalados y mantenidos según el fabricante.</li>
+        <li class="tk-y">La evaluación de riesgo de la tarea indica que se requiere EPP para arco eléctrico.</li>
+      </ul>
+    </div>
+    <div>
+      <p class="when-h no">No lo use si</p>
+      <ul class="ticks">
+        <li class="tk-n">El equipo es de corriente continua (DC) o de más de 600 V.</li>
+        <li class="tk-n">Algún dato no está confirmado o la respuesta es “no lo sé”.</li>
+        <li class="tk-n">Debe trabajar a menos de 455 mm.</li>
+        <li class="tk-n">El equipo ya tiene etiqueta con energía incidente (cal/cm²): use ese valor; la norma no permite mezclar los dos métodos en el mismo equipo.</li>
+        <li class="tk-n">La protección muestra daño, falta de mantenimiento o fue modificada.</li>
+      </ul>
+    </div>
+  </div>
+  <p class="when-foot">El cálculo de cortocircuito es una estimación simplificada. Esta herramienta no reemplaza la etiqueta del equipo ni la evaluación de una persona calificada.</p>
+</details></div>
+
+<main class="wrap gut" id="app">
+<form class="steps" id="f" novalidate autocomplete="off">
+
+  <section class="step" id="s1" data-n="1">
+    <div class="step-h"><span class="n">1</span><h2>Tipo de equipo</h2></div>
+    <p class="q">¿En qué equipo va a trabajar?</p>
+    <div class="body chips cards" role="radiogroup" aria-label="Tipo de equipo">
+      <label class="chip"><input type="radio" name="eq" value="panel"><span>Tablero de distribución<small>u otro equipo similar</small></span></label>
+      <label class="chip"><input type="radio" name="eq" value="mcc"><span>Centro de control de motores<small>CCM clase 600 V</small></span></label>
+      <label class="chip"><input type="radio" name="eq" value="switchgear"><span>Switchgear<small>clase 600 V</small></span></label>
+      <label class="chip"><input type="radio" name="eq" value="other600"><span>Otro equipo<small>277–600 V</small></span></label>
+      <label class="chip"><input type="radio" name="eq" value="dc"><span>Corriente continua<small>DC, baterías</small></span></label>
+      <label class="chip"><input type="radio" name="eq" value="none"><span>Ninguno<small>o más de 600 V</small></span></label>
+    </div>
+  </section>
+
+  <section class="step" id="s2" data-n="2">
+    <div class="step-h"><span class="n">2</span><h2>Tensión nominal</h2></div>
+    <p class="q">Tensión entre fases del equipo, según placa o diagrama unifilar.</p>
+    <div class="body">
+      <div class="chips vchips" id="vchips">
+        <button type="button" class="vbtn" data-v="208">208 V</button>
+        <button type="button" class="vbtn" data-v="220">220 V</button>
+        <button type="button" class="vbtn" data-v="240">240 V</button>
+        <button type="button" class="vbtn" data-v="440">440 V</button>
+        <button type="button" class="vbtn" data-v="480">480 V</button>
+        <button type="button" class="vbtn" data-v="600">600 V</button>
+      </div>
+      <label class="f" for="v">Otra tensión</label>
+      <div class="inrow"><input id="v" type="text" inputmode="decimal" enterkeyhint="next"><span class="unit">V</span></div>
+    </div>
+  </section>
+
+  <section class="step" id="s3" data-n="3">
+    <div class="step-h"><span class="n">3</span><h2>Corriente de cortocircuito</h2></div>
+    <p class="q">Corriente de falla disponible en el equipo donde va a trabajar.</p>
+    <div class="body">
+      <div class="chips two" role="radiogroup" aria-label="Origen de la corriente de falla">
+        <label class="chip"><input type="radio" name="kmode" value="calc"><span>Calcularla<small>transformador y cable</small></span></label>
+        <label class="chip"><input type="radio" name="kmode" value="known"><span>Tengo el dato<small>etiqueta o estudio</small></span></label>
+      </div>
+
+      <div id="kKnown" hidden>
+        <label class="f" for="ka">Corriente de falla disponible</label>
+        <div class="inrow"><input id="ka" type="text" inputmode="decimal" enterkeyhint="next"><span class="unit">kA</span></div>
+      </div>
+
+      <div id="kCalc" hidden>
+        <div class="calc">
+          <p class="sub-h">Transformador</p>
+          <div class="chips two" role="radiogroup" aria-label="Sistema">
+            <label class="chip"><input type="radio" name="ph" value="3" checked><span>Trifásico</span></label>
+            <label class="chip"><input type="radio" name="ph" value="1"><span>Monofásico</span></label>
+          </div>
+          <div class="grid2">
+            <div><label class="f" for="kva">Potencia (kVA)</label><input id="kva" type="text" inputmode="decimal"></div>
+            <div><label class="f" for="z">Impedancia Z (%)</label><input id="z" type="text" inputmode="decimal"></div>
+          </div>
+          <p class="hint">Datos de placa del transformador. La tensión es la del paso 2.</p>
+
+          <label class="check"><input type="checkbox" id="useCable" checked> Incluir cable hasta el equipo</label>
+          <div id="cableBox">
+            <div class="grid3">
+              <div><label class="f" for="mat">Material</label><select id="mat"><option value="cu">Cobre</option><option value="al">Aluminio</option></select></div>
+              <div><label class="f" for="sec">Sección (mm²)</label><input id="sec" type="text" inputmode="decimal"></div>
+              <div><label class="f" for="len">Longitud (m)</label><input id="len" type="text" inputmode="decimal"></div>
+            </div>
+            <p class="hint">Longitud de un solo sentido, desde el transformador hasta el equipo.</p>
+          </div>
+          <details class="adv"><summary>Avanzado: relación X/R del transformador</summary>
+            <label class="f" for="xr">Relación X/R</label><input id="xr" type="text" inputmode="decimal" value="5">
+            <p class="hint">Si no la conoce, deje 5. Solo influye cuando se incluye cable.</p>
+          </details>
+          <div class="calcout" id="calcOut" aria-live="polite"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="step" id="s4" data-n="4">
+    <div class="step-h"><span class="n">4</span><h2>Protección y tiempo de despeje</h2></div>
+    <p class="q">El interruptor que alimenta el equipo. Con sus datos y la corriente del paso 3 se verifica si dispara en forma instantánea.</p>
+    <div class="body">
+      <div class="chips two" role="radiogroup" aria-label="Cómo obtener el tiempo de despeje">
+        <label class="chip"><input type="radio" name="tmode" value="brk" checked><span>Con el interruptor<small>curva y corriente nominal</small></span></label>
+        <label class="chip"><input type="radio" name="tmode" value="known"><span>Tengo el tiempo<small>estudio o etiqueta</small></span></label>
+      </div>
+
+      <div id="tBrk">
+        <div class="calc">
+          <label class="f" for="bt" style="margin-top:0">Tipo de disparo magnético</label>
+          <select id="bt">
+            <option value="B">Miniatura · curva B (3–5 × In)</option>
+            <option value="C">Miniatura · curva C (5–10 × In)</option>
+            <option value="D">Miniatura · curva D (10–20 × In)</option>
+            <option value="K">Miniatura · curva K (8–12 × In)</option>
+            <option value="Z">Miniatura · curva Z (2–3 × In)</option>
+            <option value="S">Curva S (13–17 × In)</option>
+            <option value="cu">Otra curva · rango del fabricante</option>
+            <option value="tm" selected>Caja moldeada termomagnético · ajuste Ii (±20 %)</option>
+            <option value="el">Caja moldeada electrónico · ajuste Ii (±10 %)</option>
+          </select>
+          <div class="grid2">
+            <div><label class="f" for="bin">Corriente nominal In (A)</label><input id="bin" type="text" inputmode="decimal"></div>
+            <div id="biiBox"><label class="f" for="bii">Ajuste instantáneo Ii (× In)</label><input id="bii" type="text" inputmode="decimal"></div>
+          </div>
+          <div class="grid2" id="kBox" hidden>
+            <div><label class="f" for="kmin">Disparo mínimo (× In)</label><input id="kmin" type="text" inputmode="decimal"></div>
+            <div><label class="f" for="kmax">Disparo máximo (× In)</label><input id="kmax" type="text" inputmode="decimal"></div>
+          </div>
+          <p class="hint" id="btHint"></p>
+          <div class="calcout" id="tripOut" aria-live="polite"></div>
+        </div>
+      </div>
+
+      <div id="tKnown" hidden>
+      <div class="chips cards" id="tOpts" role="radiogroup" aria-label="Tiempo de despeje"></div>
+      <p class="hint" id="tOptsHint"></p>
+      <details class="adv" id="tManual"><summary>Escribir el valor exacto (segundos o ciclos)</summary>
+        <div class="grid3">
+          <div><label class="f" for="tval">Tiempo de despeje</label><input id="tval" type="text" inputmode="decimal"></div>
+          <div><label class="f" for="tunit">Unidad</label><select id="tunit"><option value="s">segundos</option><option value="c">ciclos</option></select></div>
+          <div><label class="f" for="hz">Frecuencia</label><select id="hz"><option value="60">60 Hz</option><option value="50">50 Hz</option></select></div>
+        </div>
+        <p class="hint" id="tConv"></p>
+      </details>
+      </div>
+    </div>
+  </section>
+
+  <section class="step" id="s5" data-n="5">
+    <div class="step-h"><span class="n">5</span><h2>Distancia de trabajo</h2></div>
+    <p class="q">¿Su cara y pecho estarán a 455 mm (18 in) o más de las partes energizadas?</p>
+    <div class="body chips cards" role="radiogroup" aria-label="Distancia de trabajo">
+      <label class="chip"><input type="radio" name="d" value="yes"><span>Sí<small>455 mm o más</small></span></label>
+      <label class="chip"><input type="radio" name="d" value="no"><span>No<small>más cerca</small></span></label>
+    </div>
+  </section>
+</form>
+
+<aside class="side">
+  <section class="schema" aria-label="Esquema del punto de trabajo">
+    <div class="schema-h"><h3>Esquema del trabajo</h3><span id="schemaTag"></span></div>
+    <svg id="schema" viewBox="0 0 420 252" role="img" aria-label="Esquema unifilar que se completa con los datos ingresados"></svg>
+    <p class="tip">Toque un elemento del esquema para editar su dato.</p>
+  </section>
+  <div class="progress" id="progress"><span id="progTxt"></span><div class="segs" id="segs"></div></div>
+  <div id="result" class="res" aria-live="polite"></div>
+  <section class="step res" id="s6" style="order:2">
+    <p class="sub-h" style="margin:0 0 4px;font-size:12px;text-transform:uppercase;letter-spacing:.06em;font-weight:700;color:var(--muted)">Datos del informe (opcional)</p>
+    <label class="f" for="tag" style="margin-top:6px">Equipo / ubicación</label>
+    <input id="tag" type="text" class="free" placeholder="Ej.: TD-02 Planta 1" enterkeyhint="next">
+    <label class="f" for="task">Tarea a realizar</label>
+    <input id="task" type="text" class="free" placeholder="Ej.: medición de tensión con tapa abierta" enterkeyhint="next">
+    <label class="f" for="author">Elaborado por</label>
+    <input id="author" type="text" class="free" placeholder="Nombre" enterkeyhint="done">
+  </section>
+</aside>
+</main>
+
+<nav class="nav gut" id="nav" aria-label="Navegación de pasos">
+  <button type="button" class="btn plain" id="backBtn">Atrás</button>
+  <button type="button" class="btn red" id="nextBtn">Siguiente</button>
+</nav>
+
+<script src="vendor/jspdf.umd.min.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+const nf = (n, d = 1) => Number(n).toLocaleString('es-CO', {minimumFractionDigits: d, maximumFractionDigits: d});
+const fmm = mm => mm >= 1000 ? nf(mm / 1000, 1) + ' m' : nf(mm, 0) + ' mm';
+const esc = s => s.replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const mobile = window.matchMedia('(max-width: 860px)');
+
+/* Límites de despeje de la tabla: 2, 20 y 30 ciclos a 60 Hz (0,03 s, 0,33 s y 0,5 s) */
+const T_2C = 2 / 60, T_20C = 20 / 60, T_30C = 0.5, T_NA = 99, EPS = 1e-9;
+const TOPT = {
+  c2:   {s: T_2C,  txt: 'Hasta 0,03 s', sm: '2 ciclos · disparo instantáneo', short: '≤ 0,03 s (2 ciclos)'},
+  c20:  {s: T_20C, txt: 'Hasta 0,33 s', sm: '20 ciclos', short: '≤ 0,33 s (20 ciclos)'},
+  c30:  {s: T_30C, txt: 'Hasta 0,5 s',  sm: '30 ciclos', short: '≤ 0,5 s (30 ciclos)'},
+  more: {s: T_NA,  txt: 'Mayor o no lo sé', sm: 'no confirmado', short: 'No confirmado'}
+};
+const EQ_T = {panel: ['c2'], other600: ['c2'], mcc: ['c2', 'c20'], switchgear: ['c30']};
+const EQ_T_HINT = {
+  panel: 'Para tableros la tabla solo admite despeje de hasta 0,03 s (2 ciclos).',
+  other600: 'Para este equipo la tabla solo admite despeje de hasta 0,03 s (2 ciclos).',
+  mcc: 'Para CCM la tabla admite hasta 0,03 s con 65 kA, o hasta 0,33 s con 42 kA.',
+  switchgear: 'Para switchgear la tabla admite despeje de hasta 0,5 s (30 ciclos).'
+};
+
+/* Interruptores: rangos de disparo instantáneo (× In) */
+const CURVES = {B: [3, 5], C: [5, 10], D: [10, 20], K: [8, 12], Z: [2, 3], S: [13, 17]};
+const BT_NAME = {B: 'curva B', C: 'curva C', D: 'curva D', K: 'curva K', Z: 'curva Z', S: 'curva S', cu: 'curva del fabricante', tm: 'termomagnético', el: 'electrónico'};
+const BT_TOL = {tm: 0.2, el: 0.1};
+
+/* NFPA 70E-2024 Tabla 130.7(C)(15)(a), filas AC ≤ 600 V (verificar contra la edición oficial) */
+const ROWS = {
+  panel: [
+    {ok: v => v <= 240, ka: 25, t: T_2C, cat: 1, afb: 485, name: 'Tableros u otros equipos de 240 V o menos'},
+    {ok: v => v > 240 && v <= 600, ka: 25, t: T_2C, cat: 2, afb: 900, name: 'Tableros u otros equipos de más de 240 V hasta 600 V'}
+  ],
+  mcc: [
+    {ok: v => v <= 600, ka: 65, t: T_2C, cat: 2, afb: 1500, name: 'CCM clase 600 V (65 kA, 0,03 s)'},
+    {ok: v => v <= 600, ka: 42, t: T_20C, cat: 4, afb: 4300, name: 'CCM clase 600 V (42 kA, 0,33 s)'}
+  ],
+  switchgear: [
+    {ok: v => v <= 600, ka: 35, t: T_30C, cat: 4, afb: 6000, name: 'Switchgear clase 600 V (35 kA, 0,5 s)'}
+  ],
+  other600: [
+    {ok: v => v >= 277 && v <= 600, ka: 65, t: T_2C, cat: 2, afb: 1500, name: 'Otros equipos clase 600 V, 277–600 V (65 kA, 0,03 s)'}
+  ]
+};
+const PPE = {
+  1: {cal: 4, items: [
+    'Camisa manga larga y pantalón con clasificación de arco (AR), u overol AR, mínimo 4 cal/cm²',
+    'Careta AR o capucha de traje de arco',
+    'Casco de seguridad',
+    'Gafas o monogafas de seguridad',
+    'Protección auditiva de inserción',
+    'Guantes de cuero de uso pesado, guantes AR o guantes aislantes con protectores de cuero, según se requiera',
+    'Chaqueta, parka, impermeable o forro de casco AR, según se requiera',
+    'Calzado de cuero, según se requiera']},
+  2: {cal: 8, items: [
+    'Camisa manga larga y pantalón AR, u overol AR, mínimo 8 cal/cm²',
+    'Capucha de traje de arco, o careta AR con pasamontañas AR',
+    'Casco de seguridad',
+    'Gafas o monogafas de seguridad',
+    'Protección auditiva de inserción',
+    'Guantes de cuero de uso pesado, guantes AR o guantes aislantes con protectores de cuero, según se requiera',
+    'Chaqueta, parka, impermeable o forro de casco AR, según se requiera',
+    'Calzado de cuero']},
+  4: {cal: 40, items: [
+    'Camisa manga larga y pantalón AR, u overol AR, más traje de arco (chaqueta y pantalón), mínimo 40 cal/cm² en conjunto',
+    'Capucha de traje de arco',
+    'Guantes AR, o guantes aislantes con protectores de cuero',
+    'Casco de seguridad con forro AR',
+    'Gafas o monogafas de seguridad',
+    'Protección auditiva de inserción',
+    'Chaqueta, parka o impermeable AR, según se requiera',
+    'Calzado de cuero']}
+};
+const EQ_NAME = {panel: 'Tablero', mcc: 'CCM', switchgear: 'Switchgear', other600: 'Equipo 600 V', dc: 'Equipo DC', none: 'Otro equipo'};
+const MAT = {cu: {rho: 0.01724, alpha: 0.00393, name: 'Cu'}, al: {rho: 0.02826, alpha: 0.00403, name: 'Al'}};   // Ω·mm²/m a 20 °C
+const C_MAX = 1.05, C_MIN = 0.95, X_CABLE = 0.08e-3;                                           // IEC 60909 BT; Ω/m
+
+let isExample = false;
+let downloads = null, lastX = null, lastR = null;
+const pdfButton = () => downloads && window.jspdf ? '<button type="button" class="btn red" id="pdfBtn">Descargar informe PDF</button>' : '';
+let step = 6;                 // 1..5 = pasos, 6 = resultado (modo asistente en móvil)
+const checked = new Set();
+
+/* ---------- Lectura ---------- */
+const radio = name => (document.querySelector(`input[name="${name}"]:checked`) || {}).value || '';
+const setRadio = (name, val) => document.querySelectorAll(`input[name="${name}"]`).forEach(i => i.checked = i.value === val);
+const num = id => { const s = $(id).value.trim().replace(/\s/g, '').replace(',', '.'); return s === '' ? NaN : Number(s); };
+
+/* ---------- Cortocircuito (transformador + cable) ---------- */
+function shortCircuit() {
+  const v = num('v'), kva = num('kva'), z = num('z'), xr = num('xr') > 0 ? num('xr') : 5;
+  const three = radio('ph') !== '1';
+  const out = {three, kva, z, xr, missing: []};
+  if (!(v > 0)) out.missing.push('la tensión (paso 2)');
+  if (!(kva > 0)) out.missing.push('la potencia');
+  if (!(z > 0 && z < 50)) out.missing.push('la impedancia');
+  const useCable = $('useCable').checked;
+  const A = num('sec'), L = num('len');
+  if (useCable && !(A > 0)) out.missing.push('la sección del cable');
+  if (useCable && !(L > 0)) out.missing.push('la longitud del cable');
+  if (out.missing.length) return out;
+
+  const S = kva * 1000;
+  const U = three ? v / Math.sqrt(3) : v;          // tensión de la fuente equivalente
+  const Ztr = (z / 100) * v * v / S;               // Ω por fase (lazo completo en monofásico)
+  const Rtr = Ztr / Math.sqrt(1 + xr * xr), Xtr = Rtr * xr;
+  const Ik = (c, R, X) => c * U / Math.hypot(R, X);
+  out.In = three ? S / (Math.sqrt(3) * v) : S / v;
+  out.term = Ik(C_MAX, Rtr, Xtr);
+  out.point = out.term;
+  out.pointMin = Ik(C_MIN, Rtr, Xtr);
+  if (useCable) {
+    const m = MAT[$('mat').value], k = three ? 1 : 2;   // monofásico: ida y vuelta
+    const Rc = m.rho * L / A, Rhot = Rc * (1 + m.alpha * 50), Xc = X_CABLE * L;   // 20 °C y 70 °C
+    out.cable = {A, L, mat: m.name, R: Rc, X: Xc};
+    out.point = Ik(C_MAX, Rtr + k * Rc, Xtr + k * Xc);
+    out.pointMin = Ik(C_MIN, Rtr + k * Rhot, Xtr + k * Xc);
+  }
+  out.ok = true;
+  return out;
+}
+
+/* Corriente de arco en baja tensión, IEEE 1584-2002 (equipo en caja). ibf en kA, v en kV, gap en mm */
+function arcCurrent(ibf, v, gap) {
+  const lg = Math.log10(ibf);
+  return 10 ** (-0.097 + 0.662 * lg + 0.0966 * v + 0.000526 * gap + 0.5588 * v * lg - 0.00304 * gap * lg);
+}
+function tripCheck(b) {
+  const type = $('bt').value, In = num('bin'), ii = num('bii');
+  const out = {type, In, ii, missing: []};
+  if (!(In > 0)) out.missing.push('la corriente nominal del interruptor');
+  let k;
+  if (CURVES[type]) k = CURVES[type];
+  else if (type === 'cu') {
+    const a = num('kmin'), b2 = num('kmax');
+    if (a > 0 && b2 >= a) k = [a, b2]; else out.missing.push('el rango de disparo de la curva (mínimo y máximo)');
+  }
+  else if (ii > 0) k = [ii * (1 - BT_TOL[type]), ii * (1 + BT_TOL[type])];
+  else out.missing.push('el ajuste instantáneo Ii');
+  if (!(b.v > 0)) out.missing.push('la tensión (paso 2)');
+  if (!(b.ka > 0)) out.missing.push('la corriente de cortocircuito (paso 3)');
+  if (out.missing.length) return out;
+  out.lo = k[0] * In; out.hi = k[1] * In;
+  out.ibf = b.kaMin > 0 ? b.kaMin : b.ka;                       // kA, la menor disponible
+  out.ibfIsMin = b.kaMin > 0;
+  out.Ia = arcCurrent(out.ibf, b.v / 1000, b.eq === 'switchgear' ? 32 : 25);
+  out.IaMin = 0.85 * out.Ia;                                    // IEEE 1584: segunda corriente al 85 %
+  out.inst = out.IaMin * 1000 >= out.hi;
+  out.label = CURVES[type] ? BT_NAME[type] : type === 'cu' ? `curva ${nf(k[0], 1)}–${nf(k[1], 1)} × In` : `Ii ${nf(ii, ii % 1 ? 1 : 0)}× · ${BT_NAME[type]}`;
+  out.ok = true;
+  return out;
+}
+function readTime(b) {
+  if (radio('tmode') === 'brk') {
+    const tr = tripCheck(b);
+    if (!tr.ok) return {t: NaN, tSrc: 'brk', tr, tTxt: ''};
+    return tr.inst
+      ? {t: T_2C, tSrc: 'brk', tr, tTxt: '≤ 0,03 s (instantáneo)'}
+      : {t: T_NA, tSrc: 'brk', tr, tTxt: 'No asegurado (zona térmica)'};
+  }
+  const tv = num('tval');
+  if (tv > 0) {
+    const hz = Number($('hz').value), cyc = $('tunit').value === 'c';
+    const t = cyc ? tv / hz : tv;
+    return {t, tManual: true, tSrc: 'manual', tTxt: cyc ? `${nf(tv, tv % 1 ? 1 : 0)} ciclos (${nf(t, 3)} s)` : `${nf(t, 3)} s`};
+  }
+  const k = radio('t');
+  return k ? {t: TOPT[k].s, tManual: false, tSrc: 'opt', tTxt: TOPT[k].short} : {t: NaN, tManual: false, tSrc: 'opt', tTxt: ''};
+}
+function read() {
+  const mode = radio('kmode');
+  const sc = mode === 'calc' ? shortCircuit() : null;
+  const ka = mode === 'calc' ? (sc && sc.ok ? sc.point / 1000 : NaN) : num('ka');
+  const kaMin = mode === 'calc' && sc && sc.ok ? sc.pointMin / 1000 : NaN;
+  const base = {eq: radio('eq'), v: num('v'), mode, sc, ka, kaMin};
+  return {...base, ...readTime(base), d: radio('d'), tag: $('tag').value.trim()};
+}
+const outOfScope = x => x.eq === 'dc' || x.eq === 'none';
+const stepDone = (x, n) => [!!x.eq, x.v > 0, x.ka > 0, x.t > 0, !!x.d][n - 1];
+
+/* ---------- Evaluación del método de tablas ---------- */
+function evaluate(x) {
+  if (x.eq === 'dc') return {state: 'bad', title: 'Fuera del alcance', text: 'Para equipos de corriente continua se usa otra tabla (130.7(C)(15)(b)). Esta herramienta no asigna categoría para DC. Consulte con la persona calificada responsable.'};
+  if (x.eq === 'none') return {state: 'bad', title: 'Método de tablas no aplicable', text: 'El equipo no está en las filas configuradas. Se requiere un análisis de energía incidente o la fila exacta de la tabla oficial.'};
+  const names = ['Tipo de equipo', 'Tensión nominal', 'Corriente de cortocircuito', 'Tiempo de despeje', 'Distancia de trabajo'];
+  const todo = names.map((nm, i) => [nm, stepDone(x, i + 1), i + 1]);
+  if (todo.some(t => !t[1])) return {state: 'warn', title: 'Faltan datos', todo};
+
+  if (x.v > 600) return {state: 'bad', title: 'Método de tablas no aplicable', text: `La tensión (${nf(x.v, 0)} V) supera 600 V. Esta herramienta solo cubre baja tensión.`};
+  const rows = ROWS[x.eq].filter(r => r.ok(x.v));
+  if (!rows.length) return {state: 'bad', title: 'Método de tablas no aplicable', text: `El equipo seleccionado no corresponde a ${nf(x.v, 0)} V. Revise el tipo de equipo o la tensión.`};
+
+  const t = x.t, fails = [];
+  if (t >= T_NA) fails.push(x.tSrc === 'brk'
+    ? `La corriente de arco mínima estimada (${nf(x.tr.IaMin, 2)} kA) no alcanza el disparo instantáneo del interruptor (${nf(x.tr.hi / 1000, 2)} kA). El despeje dependería de la parte térmica y puede tardar segundos.`
+    : 'El tiempo de despeje no está confirmado.');
+  if (x.d === 'no') fails.push('La distancia de trabajo es menor que 455 mm.');
+  if (!fails.length) {
+    for (const r of rows) if (x.ka <= r.ka && t <= r.t + EPS) return {state: 'ok', row: r};
+    rows.forEach(r => {
+      const f = [];
+      if (x.ka > r.ka) f.push(`corriente ${nf(x.ka, 1)} kA mayor que ${r.ka} kA`);
+      if (t > r.t + EPS) f.push(`despeje de ${x.tTxt.replace('≤ ', '')} mayor que ${nf(r.t, 2)} s`);
+      fails.push(`${r.name}: ${f.join(' y ')}.`);
+    });
+  }
+  const res = {state: 'bad', title: 'Método de tablas no aplicable', text: 'No use este método. Solicite un análisis de energía incidente antes de trabajar.', list: fails};
+  if (x.d === 'no') {
+    res.why = 'Las categorías de la tabla están calculadas para una distancia de trabajo de 455 mm. Más cerca, la energía del arco crece aproximadamente con el cuadrado de la distancia: a 300 mm puede ser cerca del doble, y el EPP de la tabla quedaría corto.';
+    res.todoDo = ['Aumente la distancia a 455 mm o más (pértigas, herramientas de mango largo, maniobra remota) y vuelva a evaluar.',
+      'Si no es posible alejarse, solicite un análisis de energía incidente para esta tarea y esta distancia, y use el EPP que resulte.'];
+  }
+  return res;
+}
+
+/* ---------- Esquema ---------- */
+function nodeStates(x, r) {
+  const s = {src: 'empty', eq: 'empty', v: 'empty', ka: 'empty', t: 'empty', d: 'empty'};
+  if (x.eq) s.eq = outOfScope(x) ? 'bad' : 'ok';
+  const rows = ROWS[x.eq] && x.v > 0 ? ROWS[x.eq].filter(q => q.ok(x.v)) : [];
+  if (x.v > 0) s.v = outOfScope(x) || x.v > 600 || (ROWS[x.eq] && !rows.length) ? 'bad' : 'ok';
+  if (x.ka > 0) s.ka = rows.length && x.ka > Math.max(...rows.map(q => q.ka)) ? 'bad' : 'ok';
+  if (x.t > 0) s.t = x.t >= T_NA || (rows.length && x.t > Math.max(...rows.map(q => q.t)) + EPS) ? 'bad' : 'ok';
+  if (x.d) s.d = x.d === 'yes' ? 'ok' : 'bad';
+  if (r.state === 'bad' && r.list && s.ka === 'ok' && s.t === 'ok' && s.d === 'ok') { s.ka = 'bad'; s.t = 'bad'; }
+  s.src = x.mode === 'calc' && x.sc && x.sc.kva > 0 ? 'ok' : x.ka > 0 ? 'ok' : 'empty';
+  return s;
+}
+function eqIcon(eq) {
+  const st = 'stroke="currentColor" fill="none" stroke-width="1.6"';
+  if (eq === 'panel') { let h = ''; for (let i = 0; i < 4; i++) for (let c = 0; c < 2; c++) h += `<rect x="${223 + c * 26}" y="${62 + i * 20}" width="18" height="10" rx="2" ${st}/>`; return h; }
+  if (eq === 'mcc') { let h = ''; for (let i = 0; i < 4; i++) h += `<rect x="218" y="${58 + i * 22}" width="54" height="18" rx="2" ${st}/><line x1="238" x2="252" y1="${67 + i * 22}" y2="${67 + i * 22}" stroke="currentColor" stroke-width="2"/>`; return h; }
+  if (eq === 'switchgear') return `<rect x="216" y="56" width="28" height="88" ${st}/><rect x="246" y="56" width="28" height="88" ${st}/><rect x="222" y="70" width="16" height="22" ${st}/><rect x="252" y="70" width="16" height="22" ${st}/>`;
+  if (eq === 'other600') return `<circle cx="245" cy="100" r="18" ${st}/><path d="M233 100c4-8 8-8 12 0s8 8 12 0" ${st}/>`;
+  if (eq === 'dc') return `<line x1="237" x2="237" y1="80" y2="120" stroke="currentColor" stroke-width="3"/><line x1="253" x2="253" y1="90" y2="110" stroke="currentColor" stroke-width="3"/><text x="245" y="138" text-anchor="middle" class="val">DC</text>`;
+  return `<text x="245" y="111" text-anchor="middle" class="val" style="font-size:30px">?</text>`;
+}
+function drawSchema(x, r) {
+  const s = nodeStates(x, r);
+  const wiz = document.body.classList.contains('wiz') && step <= 5;
+  const L = (st, n) => `s-${st}${wiz && step === n ? ' s-cur' : ''}`;
+  const ring = n => wiz && step === n;
+  const sc = x.mode === 'calc' ? x.sc : null;
+  const srcVal = sc && sc.kva > 0 ? `${nf(sc.kva, 0)} kVA${sc.z > 0 ? ' · ' + nf(sc.z, 1) + ' %' : ''}` : 'Alimentación';
+  const cableTxt = sc && $('useCable').checked && num('sec') > 0 ? [`${nf(num('sec'), 0)} mm²`, (num('len') > 0 ? nf(num('len'), 0) + ' m' : '? m') + ' · ' + MAT[$('mat').value].name] : null;
+  const tTxt = !(x.t > 0) ? '? s' : x.t >= T_NA ? (x.tSrc === 'brk' ? 'Térmico' : 'No confirmado') : x.tManual ? nf(x.t, 3) + ' s' : '≤ ' + nf(x.t, 2) + ' s';
+  const brkTxt = x.tSrc === 'brk' && num('bin') > 0 ? `${nf(num('bin'), 0)} A · ${CURVES[$('bt').value] ? 'curva ' + $('bt').value : $('bt').value === 'cu' ? 'curva fab.' : 'Ii ' + (num('bii') > 0 ? nf(num('bii'), 0) + '×' : '?')}` : 'despeje';
+  const ok = r.state === 'ok';
+  let badge;
+  if (ok) badge = `<rect class="badge-ok" x="6" y="216" width="408" height="32" rx="5"/><text x="210" y="237" text-anchor="middle" style="font-size:15px;font-weight:800">CATEGORÍA ${r.row.cat} · mín. ${PPE[r.row.cat].cal} cal/cm² · frontera ${fmm(r.row.afb)}</text>`;
+  else if (r.state === 'warn') badge = `<rect class="badge-warn" x="6" y="216" width="408" height="32" rx="5"/><text x="210" y="237" text-anchor="middle" style="font-size:14.5px;font-weight:700">Faltan ${r.todo.filter(t => !t[1]).length} dato(s) para definir la categoría</text>`;
+  else badge = `<rect class="badge-bad" x="6" y="216" width="408" height="32" rx="5"/><text x="210" y="237" text-anchor="middle" style="font-size:14.5px;font-weight:700">Método de tablas no aplicable</text>`;
+  $('schema').innerHTML = `
+    <path class="${ok ? 'afb' : 'afb-off'}" d="M280 20 A80 80 0 0 1 342.4 150" fill="none" stroke-width="1.8" stroke-dasharray="6 4"/>
+    <text x="414" y="14" text-anchor="end" class="lbl">FRONTERA DE ARCO${ok ? ' · ' + fmm(r.row.afb) : ''}</text>
+    <g class="s-${x.t > 0 ? 'ok' : 'empty'}"><line x1="66" x2="114" y1="100" y2="100" stroke="currentColor" stroke-width="2.2"/></g>
+    <g class="s-${x.eq ? 'ok' : 'empty'}" data-go="3">
+      <line x1="156" x2="210" y1="100" y2="100" stroke="currentColor" stroke-width="${cableTxt ? 3.4 : 2.2}"/>
+      ${cableTxt ? `<text x="183" y="118" text-anchor="middle" class="tiny">${cableTxt[0]}</text><text x="183" y="131" text-anchor="middle" class="tiny">${cableTxt[1]}</text>` : ''}
+    </g>
+    <g class="${L(s.src, 3)}" data-go="3">
+      <rect class="hit" x="8" y="70" width="70" height="125"/>
+      <circle cx="33" cy="100" r="14" stroke="currentColor" fill="none" stroke-width="2"/><circle cx="52" cy="100" r="14" stroke="currentColor" fill="none" stroke-width="2"/>
+      <text x="42" y="172" text-anchor="middle" class="lbl">FUENTE</text>
+      <text x="42" y="189" text-anchor="middle" class="sub">${srcVal}</text>
+      ${sc && sc.ok ? `<text x="42" y="205" text-anchor="middle" class="tiny">${nf(sc.term / 1000, 1)} kA bornes</text>` : ''}
+    </g>
+    <g class="${L(s.t, 4)}" data-go="4">
+      <rect class="hit" x="92" y="76" width="64" height="134"/>
+      ${ring(4) ? '<rect class="cur-ring" x="106" y="76" width="58" height="48" rx="6"/>' : ''}
+      <rect x="114" y="84" width="42" height="32" rx="3" stroke="currentColor" fill="none" stroke-width="2"/>
+      <line x1="122" y1="108" x2="146" y2="92" stroke="currentColor" stroke-width="2"/><circle cx="122" cy="108" r="2.5" fill="currentColor"/>
+      <text x="135" y="172" text-anchor="middle" class="lbl">PROTECCIÓN</text>
+      <text x="135" y="189" text-anchor="middle" class="val">${tTxt}</text>
+      <text x="135" y="205" text-anchor="middle" class="sub">${brkTxt}</text>
+    </g>
+    <g class="${L(s.eq, 1)}" data-go="1">
+      <rect class="hit" x="210" y="44" width="70" height="152"/>
+      ${ring(1) ? '<rect class="cur-ring" x="203" y="41" width="84" height="118" rx="7"/>' : ''}
+      <rect x="210" y="48" width="70" height="104" rx="4" stroke="currentColor" fill="none" stroke-width="2.2"/>
+      ${eqIcon(x.eq)}
+      <text x="245" y="172" text-anchor="middle" class="lbl">EQUIPO</text>
+      <text x="245" y="189" text-anchor="middle" class="val">${x.eq ? EQ_NAME[x.eq] : '?'}</text>
+    </g>
+    <g class="${L(s.v, 2)}" data-go="2">
+      <rect class="hit" x="210" y="194" width="70" height="18"/>
+      ${ring(2) ? '<rect class="cur-ring" x="214" y="192" width="62" height="20" rx="5"/>' : ''}
+      <text x="245" y="207" text-anchor="middle" class="sub" style="font-weight:700">${x.v > 0 ? nf(x.v, 0) + ' V' : '? V'}</text>
+    </g>
+    <g class="${L(s.ka, 3)}" data-go="3">
+      <rect class="hit" x="140" y="36" width="66" height="54"/>
+      ${ring(3) ? '<rect class="cur-ring" x="142" y="38" width="62" height="54" rx="6"/>' : ''}
+      <path d="M190 64 l-8 14 h7 l-6 13 l15 -18 h-7 l6 -9z" fill="currentColor"/>
+      <text x="200" y="56" text-anchor="end" class="val">${x.ka > 0 ? nf(x.ka, 1) + ' kA' : '? kA'}</text>
+    </g>
+    <g class="${L(s.d, 5)}" data-go="5">
+      <rect class="hit" x="290" y="56" width="80" height="140"/>
+      ${ring(5) ? '<rect class="cur-ring" x="300" y="56" width="50" height="96" rx="6"/>' : ''}
+      <circle cx="325" cy="70" r="8" stroke="currentColor" fill="none" stroke-width="2"/>
+      <line x1="325" y1="78" x2="325" y2="118" stroke="currentColor" stroke-width="2"/>
+      <line x1="325" y1="90" x2="307" y2="104" stroke="currentColor" stroke-width="2"/><line x1="325" y1="90" x2="341" y2="104" stroke="currentColor" stroke-width="2"/>
+      <line x1="325" y1="118" x2="313" y2="146" stroke="currentColor" stroke-width="2"/><line x1="325" y1="118" x2="337" y2="146" stroke="currentColor" stroke-width="2"/>
+      <line x1="283" x2="314" y1="158" y2="158" stroke="currentColor" stroke-width="1.4"/><line x1="283" x2="283" y1="153" y2="163" stroke="currentColor" stroke-width="1.4"/><line x1="314" x2="314" y1="153" y2="163" stroke="currentColor" stroke-width="1.4"/>
+      <text x="345" y="172" text-anchor="middle" class="lbl">TRABAJADOR</text>
+      <text x="345" y="189" text-anchor="middle" class="val">${!x.d ? '? mm' : x.d === 'yes' ? '≥ 455 mm' : '< 455 mm'}</text>
+    </g>
+    ${badge}`;
+  const n = [1, 2, 3, 4, 5].filter(i => stepDone(x, i)).length;
+  $('schemaTag').textContent = `${n} de 5 datos`;
+}
+
+/* ---------- Panel del cálculo (paso 3) ---------- */
+function renderCalc(x) {
+  $('kKnown').hidden = x.mode !== 'known';
+  $('kCalc').hidden = x.mode !== 'calc';
+  $('cableBox').hidden = !$('useCable').checked;
+  if (x.mode !== 'calc') return;
+  const sc = x.sc;
+  if (!sc.ok) { $('calcOut').innerHTML = `<span class="hint" style="margin:0">Falta ${sc.missing.join(', ')}.</span>`; return; }
+  $('calcOut').innerHTML = `
+    <div class="kbig"><b>${nf(sc.point / 1000, 2)} kA</b><span>${sc.cable ? 'en el equipo (final del cable)' : 'en bornes del transformador'}</span></div>
+    <dl>
+      <div><dt>Corriente nominal del transformador</dt><dd>${nf(sc.In, 0)} A</dd></div>
+      <div><dt>Cortocircuito en bornes</dt><dd>${nf(sc.term / 1000, 2)} kA</dd></div>
+      ${sc.cable ? `<div><dt>Resistencia del cable (por conductor)</dt><dd>${nf(sc.cable.R * 1000, 2)} mΩ</dd></div>
+      <div><dt>Cortocircuito en el equipo</dt><dd>${nf(sc.point / 1000, 2)} kA</dd></div>` : ''}
+    </dl>
+    <p class="hint">Corriente máxima ${sc.three ? 'trifásica' : 'monofásica'}, c = 1,05, conductores a 20 °C y red aguas arriba infinita. Este valor se usa en la tabla.</p>`;
+}
+
+/* ---------- Resultado ---------- */
+const ICON = '<svg width="28" height="25" viewBox="0 0 30 27" aria-hidden="true"><path d="M15 1 29 26H1z" fill="#111"/><path d="M15 6 26 24H4z" fill="#f28c00"/><text x="15" y="22" text-anchor="middle" font-size="14" font-weight="800" fill="#111" font-family="Arial">!</text></svg>';
+
+function sourceTxt(x) {
+  if (x.mode !== 'calc' || !x.sc || !x.sc.ok) return 'dato de etiqueta o estudio';
+  const sc = x.sc;
+  return `calculada: ${nf(sc.kva, 0)} kVA, Z ${nf(sc.z, 1)} %` + (sc.cable ? `, ${sc.cable.mat} ${nf(sc.cable.A, 0)} mm² × ${nf(sc.cable.L, 0)} m` : ', en bornes');
+}
+
+function renderResult(x, r) {
+  let html = isExample ? '<div class="example">EJEMPLO. Pulse “Nueva” e ingrese los datos de su equipo.</div>' : '';
+  if (r.state === 'ok') {
+    const p = PPE[r.row.cat];
+    const done = p.items.filter((_, i) => checked.has(r.row.cat + '-' + i)).length;
+    html += `<div class="label" role="region" aria-label="Resultado">
+      <div class="hd">${ICON} ADVERTENCIA · ARCO ELÉCTRICO</div>
+      <div class="bd">
+        <div class="big"><div><span>Categoría de EPP</span><b>${r.row.cat}</b></div><div><span>Frontera de arco</span><b>${fmm(r.row.afb)}</b></div></div>
+        <dl class="facts">
+          ${x.tag ? `<div><dt>Equipo</dt><dd>${esc(x.tag)}</dd></div>` : ''}
+          <div><dt>Ropa con clasificación de arco</dt><dd>mín. ${p.cal} cal/cm²</dd></div>
+          <div><dt>Tensión nominal</dt><dd>${nf(x.v, 0)} V AC</dd></div>
+          <div><dt>Corriente de falla</dt><dd>${nf(x.ka, 1)} kA <span style="font-weight:400">(máx. ${r.row.ka})</span></dd></div>
+          ${x.tSrc === 'brk' ? `<div><dt>Interruptor</dt><dd>${nf(x.tr.In, 0)} A · ${x.tr.label}</dd></div>` : ''}
+          <div><dt>Tiempo de despeje</dt><dd>${x.tTxt} <span style="font-weight:400">(máx. ${nf(r.row.t, 2)})</span></dd></div>
+          <div><dt>Distancia de trabajo</dt><dd>≥ 455 mm</dd></div>
+        </dl>
+        <p class="disc">Corriente ${sourceTxt(x)}. Fila aplicada: ${r.row.name}. Resumen de apoyo; no reemplaza la etiqueta oficial del equipo.</p>
+      </div></div>
+      <div class="ppe"><div class="ppe-h"><h3>Lista de EPP · Cat. ${r.row.cat}</h3><span>${done} de ${p.items.length} verificados</span></div>
+        <ul>${p.items.map((it, i) => { const k = r.row.cat + '-' + i, on = checked.has(k);
+          return `<li class="${on ? 'on' : ''}"><button type="button" data-k="${k}" aria-pressed="${on}"><i aria-hidden="true">${on ? '✓' : ''}</i><span>${it}</span></button></li>`; }).join('')}</ul>
+        <p class="note">Toque cada elemento al verificarlo. Los guantes aislantes y la protección contra choque eléctrico se seleccionan aparte, según la tensión.</p>
+      </div>
+      <div class="actions">${pdfButton()}<button type="button" class="btn ${downloads ? 'plain' : 'red'}" id="copyBtn">Copiar resumen</button><span class="copied" id="copied" role="status"></span></div>
+      <textarea class="copybox" id="copyBox" readonly hidden aria-label="Resumen para copiar"></textarea>`;
+  } else if (r.state === 'warn') {
+    html += `<div class="state warn"><h3>${r.title}</h3><p>Complete los pasos para obtener la categoría de EPP.</p>
+      <ul class="todo">${r.todo.map(t => `<li class="${t[1] ? 'ok' : ''}">${t[1] ? t[0] : `<button type="button" data-go="${t[2]}">${t[0]}</button>`}</li>`).join('')}</ul></div>`;
+  } else {
+    html += `<div class="state bad"><h3>${r.title}</h3><p>${r.text}</p>${r.list ? `<ul>${r.list.map(l => `<li>${l}</li>`).join('')}</ul>` : ''}` +
+      (r.why ? `<p style="margin-top:10px"><b>¿Por qué?</b> ${r.why}</p><p style="margin-top:8px"><b>Qué hacer</b></p><ul>${r.todoDo.map(l => `<li>${l}</li>`).join('')}</ul>` : '') + `</div>` +
+      (downloads ? `<div class="actions">${pdfButton()}<span class="copied" id="copied" role="status"></span></div>` : '');
+  }
+  html += `<details class="rules"><summary>Condiciones y supuestos</summary><ul>
+    <li>Corriente de falla y tiempo de despeje confirmados para el punto de trabajo, no supuestos.</li>
+    <li>Equipo instalado y mantenido según las instrucciones del fabricante.</li>
+    <li>Distancia de trabajo igual o mayor a la de la tabla (455 mm).</li>
+    <li>Si un dato no se puede confirmar, el resultado no aplica.</li>
+    <li>Cortocircuito calculado: red aguas arriba infinita, factor c = 1,05 (IEC 60909), cable a 20 °C con 0,08 Ω/km de reactancia, sin aporte de motores.</li>
+    <li>Valores de la tabla cargados para AC hasta 600 V. Confírmelos contra la edición oficial de NFPA 70E-2024.</li></ul></details>`;
+  $('result').innerHTML = html;
+  $('result').dataset.summary = r.state === 'ok' ? summary(x, r) : '';
+}
+
+function summary(x, r) {
+  return ['Selección de EPP por arco eléctrico (NFPA 70E-2024, método de tablas)',
+    x.tag ? `Equipo: ${x.tag}` : null,
+    `Categoría de EPP: ${r.row.cat} · Frontera de arco: ${fmm(r.row.afb)} · Ropa AR mín. ${PPE[r.row.cat].cal} cal/cm²`,
+    `Datos: ${nf(x.v, 0)} V AC · ${nf(x.ka, 1)} kA (${sourceTxt(x)}) · despeje ${x.tTxt}${x.tSrc === 'brk' ? ` (interruptor ${nf(x.tr.In, 0)} A, ${x.tr.label})` : ''} · distancia ≥ 455 mm`,
+    `Fila: ${r.row.name}`,
+    `Fecha: ${new Date().toLocaleString('es-CO', {dateStyle: 'medium', timeStyle: 'short'})}`].filter(Boolean).join('\n');
+}
+
+/* ---------- Asistente (móvil) ---------- */
+function renderWizard(x) {
+  const wiz = mobile.matches;
+  document.body.classList.toggle('wiz', wiz);
+  document.body.classList.toggle('view-res', wiz && step === 6);
+  document.querySelectorAll('.step[data-n]').forEach(s => s.classList.toggle('cur', Number(s.dataset.n) === step));
+  $('progTxt').textContent = `Paso ${Math.min(step, 5)} de 5`;
+  $('segs').innerHTML = [1, 2, 3, 4, 5].map(i => `<i class="${i === step ? 'cur' : stepDone(x, i) ? 'done' : ''}"></i>`).join('');
+  const back = $('backBtn'), next = $('nextBtn');
+  if (step === 6) {
+    back.textContent = 'Editar datos';
+    next.textContent = 'Nueva evaluación';
+    next.disabled = false;
+  } else {
+    back.textContent = step === 1 ? 'Resultado' : 'Atrás';
+    next.textContent = step === 5 || outOfScope(x) ? 'Ver resultado' : 'Siguiente';
+    next.disabled = !stepDone(x, step);
+  }
+}
+function go(n) {
+  step = n;
+  render();
+  if (mobile.matches) window.scrollTo({top: 0, behavior: 'smooth'});
+  else if (n <= 5) $('s' + n).scrollIntoView({behavior: 'smooth', block: 'start'});
+}
+function advance() {
+  const x = read();
+  if (step <= 5 && !stepDone(x, step)) return;
+  if (outOfScope(x) || step === 5) return go(6);
+  go(step + 1);
+}
+
+/* ---------- Tiempo de despeje: opciones según equipo ---------- */
+let lastEqT = null;
+function renderTimeOpts(eq) {
+  if (eq === lastEqT) return;
+  lastEqT = eq;
+  const keys = [...(EQ_T[eq] || ['c2', 'c20', 'c30']), 'more'];
+  const prev = radio('t');
+  $('tOpts').innerHTML = keys.map(k => `<label class="chip"><input type="radio" name="t" value="${k}"${k === prev ? ' checked' : ''}><span>${TOPT[k].txt}<small>${TOPT[k].sm}</small></span></label>`).join('');
+  $('tOptsHint').textContent = EQ_T_HINT[eq] || 'Elija primero el tipo de equipo para ver solo las opciones que admite la tabla.';
+}
+function renderTimeConv(x) {
+  const el = $('tConv');
+  if (!x.tManual) { el.innerHTML = 'Si escribe un valor, reemplaza la opción seleccionada. En ciclos se convierte con la frecuencia elegida.'; return; }
+  const opts = EQ_T[x.eq] || ['c2', 'c20', 'c30'];
+  const k = opts.find(k => x.t <= TOPT[k].s + EPS);
+  const max = TOPT[opts[opts.length - 1]];
+  el.innerHTML = `= <b>${nf(x.t, 3)} s</b> · ${nf(x.t * 60, 1)} ciclos a 60 Hz. ` + (k
+    ? `<span class="tconv-ok">Entra en “${TOPT[k].short}”.</span>`
+    : `<span class="tconv-bad">Supera ${max.short.replace('≤ ', '')}, el límite ${EQ_T[x.eq] ? 'para este equipo' : 'de la tabla'}: el método de tablas no aplica.</span>`);
+}
+
+/* ---------- Panel del interruptor (paso 4) ---------- */
+function renderTrip(x) {
+  const brk = radio('tmode') === 'brk';
+  $('tBrk').hidden = !brk; $('tKnown').hidden = brk;
+  const type = $('bt').value, In = num('bin');
+  const mini = !!CURVES[type] || type === 'cu';
+  $('biiBox').hidden = mini;
+  $('kBox').hidden = type !== 'cu';
+  $('btHint').innerHTML = type === 'cu'
+    ? 'Ingrese el rango de disparo instantáneo de la ficha del fabricante.'
+    : CURVES[type]
+    ? (In > 125 ? '<span class="tconv-bad">Las curvas B, C, D, K, Z y S son de interruptores miniatura, normalmente hasta 125 A. Revise el tipo de interruptor.</span>' : 'Rango típico de la curva. Si la ficha del fabricante indica otro, use “Otra curva”.')
+    : 'Ajuste instantáneo en múltiplos de In (por ejemplo 10). Si el disparo electrónico tiene retardo de corto tiempo o la función instantánea apagada, use “Tengo el tiempo”.';
+  if (!brk) return;
+  const tr = x.tr;
+  if (!tr || !tr.ok) { $('tripOut').innerHTML = `<span class="hint" style="margin:0">Falta ${tr ? tr.missing.join(', ') : 'información'}.</span>`; return; }
+  $('tripOut').innerHTML = `
+    <div class="kbig"><b class="${tr.inst ? 'tconv-ok' : 'tconv-bad'}">${tr.inst ? '≤ 0,03 s' : 'Térmico'}</b><span>${tr.inst ? 'disparo instantáneo asegurado' : 'disparo instantáneo no asegurado'}</span></div>
+    <dl>
+      <div><dt>Disparo instantáneo</dt><dd>${nf(tr.lo, 0)}–${nf(tr.hi, 0)} A</dd></div>
+      <div><dt>Cortocircuito usado${tr.ibfIsMin ? ' (mínimo)' : ''}</dt><dd>${nf(tr.ibf, 2)} kA</dd></div>
+      <div><dt>Corriente de arco estimada</dt><dd>${nf(tr.Ia, 2)} kA</dd></div>
+      <div><dt>Corriente de arco mínima (85 %)</dt><dd>${nf(tr.IaMin, 2)} kA</dd></div>
+    </dl>
+    <p class="hint">${tr.inst
+      ? 'La corriente de arco mínima supera el umbral máximo de disparo: se toma despeje de 2 ciclos (0,03 s).'
+      : 'La corriente de arco mínima no supera el umbral máximo de disparo. Confirme el tiempo con la curva del fabricante o el estudio.'}
+      Corriente de arco según IEEE 1584-2002${tr.ibfIsMin ? '; cortocircuito mínimo con c = 0,95 y cable a 70 °C' : ''}.</p>`;
+}
+
+/* ---------- Render principal ---------- */
+function render() {
+  renderTimeOpts(radio('eq'));
+  const x = read();
+  renderTimeConv(x);
+  const r = evaluate(x);
+  [1, 2, 3, 4, 5].forEach(n => $('s' + n).classList.toggle('done', stepDone(x, n)));
+  ['s2', 's3', 's4', 's5'].forEach(id => $(id).style.opacity = outOfScope(x) ? .45 : 1);
+  document.querySelectorAll('#vchips [data-v]').forEach(b => b.classList.toggle('on', Number(b.dataset.v) === x.v));
+  renderCalc(x);
+  renderTrip(x);
+  renderWizard(x);
+  drawSchema(x, r);
+  lastX = x; lastR = r;
+  renderResult(x, r);
+}
+
+/* ---------- Eventos ---------- */
+let autoTimer;
+const autoAdvance = () => { if (mobile.matches) { clearTimeout(autoTimer); autoTimer = setTimeout(advance, 280); } };
+$('f').addEventListener('input', () => { isExample = false; render(); });
+$('f').addEventListener('change', e => {
+  isExample = false; render();
+  // en móvil, avanza solo al elegir una opción de los pasos 1, 4 y 5
+  if (e.target.type === 'radio' && ['eq', 't', 'd'].includes(e.target.name)) autoAdvance();
+});
+$('f').addEventListener('submit', e => e.preventDefault());
+$('tval').addEventListener('input', () => { if (num('tval') > 0) document.querySelectorAll('input[name="t"]').forEach(i => i.checked = false); });
+$('tOpts').addEventListener('change', () => { $('tval').value = ''; render(); });
+$('tag').addEventListener('input', () => render());
+document.querySelectorAll('#vchips [data-v]').forEach(b => b.addEventListener('click', () => {
+  $('v').value = b.dataset.v; isExample = false; render(); autoAdvance();
+}));
+$('f').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && e.target.matches('input[type=text]')) { e.preventDefault(); e.target.blur(); if (['v', 'ka'].includes(e.target.id)) advance(); }
+});
+
+$('schema').addEventListener('click', e => { const g = e.target.closest('[data-go]'); if (g) go(Number(g.dataset.go)); });
+$('result').addEventListener('click', e => {
+  const g = e.target.closest('[data-go]'); if (g) return go(Number(g.dataset.go));
+  const b = e.target.closest('button[data-k]');
+  if (b) { const k = b.dataset.k; checked.has(k) ? checked.delete(k) : checked.add(k); render(); return; }
+  if (e.target.id === 'pdfBtn') { savePdf(); return; }
+  if (e.target.id === 'copyBtn') {
+    const text = $('result').dataset.summary, box = $('copyBox');
+    const fallback = () => { box.hidden = false; box.value = text; box.focus(); box.select(); $('copied').textContent = 'Texto seleccionado: use Copiar del teléfono'; };
+    try { navigator.clipboard.writeText(text).then(() => $('copied').textContent = 'Resumen copiado').catch(fallback); } catch (err) { fallback(); }
+  }
+});
+
+function newEval() {
+  $('f').reset(); lastEqT = null; $('tag').value = ''; $('task').value = ''; $('xr').value = '5'; checked.clear(); isExample = false;
+  go(1);
+}
+$('newBtn').addEventListener('click', newEval);
+$('backBtn').addEventListener('click', () => step === 6 ? go(5) : step === 1 ? go(6) : go(step - 1));
+$('nextBtn').addEventListener('click', () => step === 6 ? newEval() : advance());
+mobile.addEventListener('change', render);
+
+
+/* ---------- Informe PDF ---------- */
+const EQ_FULL = {panel: 'Tablero de distribución u otro equipo similar', mcc: 'Centro de control de motores (CCM) clase 600 V',
+  switchgear: 'Switchgear clase 600 V', other600: 'Otro equipo clase 600 V (277–600 V)', dc: 'Equipo de corriente continua', none: 'Equipo no listado'};
+// Las fuentes estándar del PDF no traen algunos símbolos: se reemplazan
+const P = v => String(v ?? '').replace(/≤/g, '<=').replace(/≥/g, '>=').replace(/Ω/g, 'ohm').replace(/[✓✕]/g, '').replace(/[^\x09\x0A\x20-\x7E\xA0-\xFF–—“”‘’•…]/g, '');
+
+function buildPdf(x, r) {
+  const {jsPDF} = window.jspdf;
+  const doc = new jsPDF({unit: 'mm', format: 'letter'});
+  const W = 215.9, H = 279.4, M = 16, CW = W - 2 * M;
+  const now = new Date();
+  const fecha = now.toLocaleString('es-CO', {dateStyle: 'long', timeStyle: 'short'});
+  let y = 0;
+  const ink = () => doc.setTextColor(27, 26, 25), muted = () => doc.setTextColor(98, 95, 91);
+  const room = h => { if (y + h > H - 22) { doc.addPage(); y = 18; } };
+  const font = (sz, bold) => { doc.setFont('helvetica', bold ? 'bold' : 'normal'); doc.setFontSize(sz); };
+  const para = (txt, sz = 9.5, gap = 4.4) => { font(sz); ink(); doc.splitTextToSize(P(txt), CW).forEach(l => { room(gap); doc.text(l, M, y); y += gap; }); };
+  const section = t => { room(16); y += 4; font(11.5, true); ink(); doc.text(P(t), M, y); y += 2; doc.setDrawColor(224, 27, 34); doc.setLineWidth(0.6); doc.line(M, y, M + 22, y); y += 6; };
+  const row = (k, v) => {
+    font(9.5); const vl = doc.splitTextToSize(P(v), CW * 0.55);
+    const h = Math.max(1, vl.length) * 4.4 + 1.6; room(h);
+    muted(); doc.text(P(k), M, y);
+    font(9.5, true); ink(); vl.forEach((l, i) => doc.text(l, W - M, y + i * 4.4, {align: 'right'}));
+    doc.setDrawColor(220, 216, 211); doc.setLineWidth(0.2); doc.line(M, y + h - 3.2, W - M, y + h - 3.2);
+    y += h;
+  };
+
+  // Encabezado
+  doc.setFillColor(20, 20, 20); doc.rect(0, 0, W, 24, 'F');
+  doc.setFillColor(224, 27, 34); doc.triangle(M, 17, M + 5, 7, M + 10, 17, 'F');
+  font(15, true); doc.setTextColor(255, 255, 255); doc.text('Informe de selección de EPP · Arco eléctrico', M + 14, 12.5);
+  font(8.5); doc.setTextColor(207, 202, 196); doc.text('NFPA 70E-2024 · Método de tablas, Tabla 130.7(C)(15)(a) · AC hasta 600 V', M + 14, 18);
+  y = 32;
+  font(9.5); muted();
+  doc.text(P(`Fecha: ${fecha}`), M, y);
+  doc.text(P(`Elaborado por: ${$('author').value.trim() || '—'}`), W - M, y, {align: 'right'}); y += 5;
+  doc.text(P(`Equipo / ubicación: ${x.tag || '—'}`), M, y); y += 5;
+  if ($('task').value.trim()) { doc.text(P(`Tarea: ${$('task').value.trim()}`), M, y); y += 5; }
+  if (isExample) { font(9, true); doc.setTextColor(122, 80, 0); doc.text('EJEMPLO: datos de demostración, no corresponden a un equipo real.', M, y); y += 5; }
+  y += 2;
+
+  // Resultado tipo etiqueta
+  if (r.state === 'ok') {
+    const p = PPE[r.row.cat];
+    doc.setDrawColor(17, 17, 17); doc.setLineWidth(0.8);
+    doc.setFillColor(242, 140, 0); doc.rect(M, y, CW, 11, 'FD');
+    font(14, true); doc.setTextColor(17, 17, 17); doc.text('ADVERTENCIA · ARCO ELÉCTRICO', M + 4, y + 7.6);
+    doc.setFillColor(255, 255, 255); doc.rect(M, y + 11, CW, 26, 'FD');
+    const col = CW / 3;
+    [[`Categoría de EPP`, String(r.row.cat)], ['Frontera de arco', fmm(r.row.afb)], ['Ropa con clasificación de arco', `mín. ${p.cal} cal/cm²`]].forEach(([k, v], i) => {
+      const cx = M + i * col;
+      if (i) { doc.setLineWidth(0.4); doc.line(cx, y + 11, cx, y + 37); }
+      font(8, true); doc.setTextColor(68, 68, 68); doc.text(P(k.toUpperCase()), cx + 4, y + 18);
+      font(i ? 17 : 24, true); doc.setTextColor(17, 17, 17); doc.text(P(v), cx + 4, y + 31);
+    });
+    y += 44;
+    para(`Fila aplicada: ${r.row.name}.`, 9);
+  } else {
+    doc.setDrawColor(163, 23, 15); doc.setLineWidth(0.8); doc.setFillColor(253, 236, 234);
+    const lines = [r.text, ...(r.list || [])].flatMap(t => doc.splitTextToSize(P('• ' + t), CW - 8));
+    const h = 14 + lines.length * 4.6;
+    doc.rect(M, y, CW, h, 'FD');
+    font(14, true); doc.setTextColor(163, 23, 15); doc.text(P(r.title.toUpperCase()), M + 4, y + 8);
+    font(9.5); lines.forEach((l, i) => doc.text(l, M + 4, y + 14 + i * 4.6));
+    y += h + 4;
+    if (r.why) { para('Por qué: ' + r.why, 9); r.todoDo.forEach(t => para('• ' + t, 9)); }
+  }
+
+  // Verificación de límites
+  if (r.state === 'ok') {
+    section('Verificación de los límites de la tabla');
+    const head = ['Parámetro', 'Valor', 'Límite de la fila', 'Resultado'], cw = [52, 52, 46, CW - 150];
+    const rowsT = [
+      ['Tensión nominal', `${nf(x.v, 0)} V AC`, x.eq === 'panel' ? (x.v <= 240 ? '<= 240 V' : '240–600 V') : '<= 600 V', 'Cumple'],
+      ['Corriente de falla', `${nf(x.ka, 2)} kA`, `<= ${r.row.ka} kA`, 'Cumple'],
+      ['Tiempo de despeje', x.tTxt, `<= ${nf(r.row.t, 2)} s`, 'Cumple'],
+      ['Distancia de trabajo', '>= 455 mm', '>= 455 mm', 'Cumple']
+    ];
+    const tr = (cells, bold, fill) => {
+      room(7.5);
+      if (fill) { doc.setFillColor(240, 238, 235); doc.rect(M, y - 4.6, CW, 7, 'F'); }
+      let cx = M + 2;
+      cells.forEach((c, i) => { font(9, bold || i === 3); if (i === 3 && !bold) doc.setTextColor(23, 102, 58); else ink(); doc.text(P(c), cx, y); cx += cw[i]; });
+      doc.setDrawColor(220, 216, 211); doc.setLineWidth(0.2); doc.line(M, y + 2.4, W - M, y + 2.4); y += 7;
+    };
+    tr(head, true, true); rowsT.forEach(rw => tr(rw));
+  }
+
+  // Datos de entrada y cálculos
+  section('1. Equipo');
+  row('Tipo de equipo', EQ_FULL[x.eq] || '—');
+  row('Tensión nominal', x.v > 0 ? `${nf(x.v, 0)} V` : '—');
+
+  section('2. Corriente de cortocircuito');
+  if (x.mode === 'calc' && x.sc && x.sc.ok) {
+    const sc = x.sc;
+    row('Origen', 'Calculada con datos de placa');
+    row('Transformador', `${nf(sc.kva, 0)} kVA · Z = ${nf(sc.z, 2)} % · ${sc.three ? 'trifásico' : 'monofásico'} · X/R = ${nf(sc.xr, 1)}`);
+    row('Corriente nominal del transformador', `${nf(sc.In, 0)} A`);
+    row('Cortocircuito en bornes (máximo)', `${nf(sc.term / 1000, 2)} kA`);
+    if (sc.cable) {
+      row('Cable hasta el equipo', `${sc.cable.mat} ${nf(sc.cable.A, 0)} mm² × ${nf(sc.cable.L, 0)} m`);
+      row('Cortocircuito en el equipo (máximo)', `${nf(sc.point / 1000, 2)} kA`);
+    }
+    row('Cortocircuito mínimo en el equipo', `${nf(sc.pointMin / 1000, 2)} kA`);
+  } else row('Corriente de falla disponible', x.ka > 0 ? `${nf(x.ka, 2)} kA (dato de etiqueta o estudio)` : '—');
+
+  section('3. Protección y tiempo de despeje');
+  if (x.tSrc === 'brk' && x.tr && x.tr.ok) {
+    const t = x.tr;
+    row('Interruptor', `${nf(t.In, 0)} A · ${t.label}`);
+    row('Rango de disparo instantáneo', `${nf(t.lo, 0)}–${nf(t.hi, 0)} A`);
+    row('Cortocircuito usado para el disparo', `${nf(t.ibf, 2)} kA${t.ibfIsMin ? ' (mínimo)' : ''}`);
+    row('Corriente de arco estimada (IEEE 1584-2002)', `${nf(t.Ia, 2)} kA`);
+    row('Corriente de arco mínima (85 %)', `${nf(t.IaMin, 2)} kA`);
+    row('Disparo instantáneo', t.inst ? 'Asegurado' : 'No asegurado');
+  } else row('Origen del dato', x.tSrc === 'manual' ? 'Valor ingresado' : 'Seleccionado (estudio o etiqueta)');
+  row('Tiempo de despeje', x.tTxt || '—');
+
+  section('4. Distancia de trabajo');
+  row('Trabajará a 455 mm o más', x.d === 'yes' ? 'Sí' : x.d === 'no' ? 'No' : '—');
+
+  // EPP
+  if (r.state === 'ok') {
+    const p = PPE[r.row.cat];
+    section(`5. EPP requerido · Categoría ${r.row.cat}`);
+    p.items.forEach((it, i) => {
+      const on = checked.has(r.row.cat + '-' + i);
+      font(9.5); const ls = doc.splitTextToSize(P(it), CW - 10); room(ls.length * 4.4 + 2);
+      doc.setDrawColor(98, 95, 91); doc.setLineWidth(0.3); doc.rect(M, y - 3.3, 3.8, 3.8);
+      if (on) { doc.setDrawColor(23, 102, 58); doc.setLineWidth(0.7); doc.line(M + 0.7, y - 1.4, M + 1.6, y - 0.2); doc.line(M + 1.6, y - 0.2, M + 3.2, y - 2.8); }
+      ink(); ls.forEach((l, j) => doc.text(l, M + 7, y + j * 4.4)); y += ls.length * 4.4 + 1.6;
+    });
+    para(`Verificados en campo: ${p.items.filter((_, i) => checked.has(r.row.cat + '-' + i)).length} de ${p.items.length}. Los guantes aislantes y la protección contra choque eléctrico se seleccionan aparte, según la tensión.`, 8.5);
+  }
+
+  section('Condiciones y supuestos');
+  ['El método de tablas solo aplica si se cumplen todos los límites de la fila y los datos están confirmados para el punto de trabajo.',
+   'No se debe usar si el equipo ya tiene etiqueta con energía incidente: la norma no permite mezclar los dos métodos en el mismo equipo.',
+   'Cortocircuito: red aguas arriba infinita, factor c = 1,05 (máximo) y 0,95 (mínimo) según IEC 60909, cable a 20 °C / 70 °C, reactancia 0,08 ohm/km, sin aporte de motores.',
+   'Disparo instantáneo: se considera asegurado cuando la corriente de arco mínima (85 % del valor IEEE 1584-2002) supera el umbral máximo del interruptor; en ese caso se toma despeje de 2 ciclos (0,03 s).',
+   'Valores de la tabla cargados para AC hasta 600 V. Deben confirmarse contra la edición oficial de NFPA 70E-2024.'].forEach(t => para('• ' + t, 8.5, 4));
+
+  // Firmas
+  room(28); y += 14;
+  doc.setDrawColor(27, 26, 25); doc.setLineWidth(0.3);
+  doc.line(M, y, M + 75, y); doc.line(W - M - 75, y, W - M, y);
+  font(8.5); muted(); doc.text('Elaborado por', M, y + 4.5); doc.text('Revisado por (persona calificada)', W - M - 75, y + 4.5);
+
+  // Pie en cada página
+  const n = doc.getNumberOfPages();
+  for (let i = 1; i <= n; i++) {
+    doc.setPage(i); font(7.5); muted();
+    doc.text(P('Herramienta de apoyo. No reemplaza la etiqueta del equipo ni la evaluación de una persona calificada.'), M, H - 10);
+    doc.text(`Página ${i} de ${n}`, W - M, H - 10, {align: 'right'});
+  }
+  return doc;
+}
+
+async function savePdf() {
+  const msg = $('copied');
+  if (!downloads || !lastX || !lastR) return;
+  try {
+    const doc = buildPdf(lastX, lastR);
+    const d = new Date(), pad = n => String(n).padStart(2, '0');
+    const name = (lastX.tag || 'equipo').replace(/[^\w\-áéíóúñÁÉÍÓÚÑ ]+/g, '').trim().replace(/\s+/g, '_').slice(0, 40) || 'equipo';
+    const res = await downloads.save({filename: `Informe_EPP_${name}_${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}.pdf`, data: doc.output('blob')});
+    if (msg) msg.textContent = res.status === 'saved' ? 'Informe descargado' : 'Informe enviado';
+  } catch (err) {
+    if (!msg) return;
+    const code = err && err.code;
+    msg.textContent = code === 'declined' ? 'Descarga cancelada' : code === 'rate_limited' ? 'Espere un momento e intente de nuevo' : 'No se pudo generar el informe en esta vista';
+  }
+}
+
+/* Descarga directa del navegador */
+downloads = {
+  save: async ({filename, data}) => {
+    const url = URL.createObjectURL(data instanceof Blob ? data : new Blob([data], {type: 'application/pdf'}));
+    const a = document.createElement('a');
+    a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+    return {status: 'saved'};
+  }
+};
+
+/* App instalable y uso sin conexión */
+if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+  window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+}
+let installEvt = null;
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; $('installBtn').hidden = false; });
+$('installBtn').addEventListener('click', async () => {
+  if (!installEvt) return;
+  installEvt.prompt();
+  try { await installEvt.userChoice; } catch (e) {}
+  installEvt = null; $('installBtn').hidden = true;
+});
+window.addEventListener('appinstalled', () => { $('installBtn').hidden = true; });
+
+/* Inicio: ejemplo calculado (800 kVA, 4 %, 220 V, Cu 70 mm² × 30 m) mostrando el resultado */
+if (!mobile.matches) $('whenUse').open = true;
+setRadio('eq', 'panel'); $('v').value = '220'; setRadio('kmode', 'calc'); setRadio('ph', '3');
+$('kva').value = '800'; $('z').value = '4'; $('sec').value = '70'; $('len').value = '30';
+renderTimeOpts('panel'); setRadio('tmode', 'brk'); $('bt').value = 'tm'; $('bin').value = '250'; $('bii').value = '10'; setRadio('d', 'yes');
+isExample = true; step = 6; render();
+</script>
+</body>
+</html>
